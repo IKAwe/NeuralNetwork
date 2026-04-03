@@ -4,7 +4,8 @@
 #include <stdexcept>
 
 /**
- * @brief 
+ * @brief For usage especially when we dont know the number of rows. First - add al the cells with add_cell, then set the number of columns with set_columns_nb, 
+ and finally call finalize to calculate the number of rows based on the number of cells and columns.
  */
 class StringMatrix {
 	std::vector<char> buffer;
@@ -13,6 +14,10 @@ class StringMatrix {
 	size_t rows = 0;
 	size_t columns = 0;
 public:
+	StringMatrix(size_t r, size_t c) : rows(r), columns(c) {
+		cells.resize(r * c);
+		buffer.reserve(r * c * 10); // Assuming average cell length of 10 characters, adjust as needed
+	};
 	StringMatrix() = default;
 	/**
  * @brief Add a string_view cell to cells vector. The string_view should point to a valid string in the buffer vector.
@@ -55,7 +60,11 @@ public:
 	size_t get_columns_nb() const {
 		return columns;
 	};
-
+	//For writing to the matrix
+	std::string_view& operator()(size_t r, size_t c) {
+		return cells[r * columns + c];
+	}
+	//For reading from the matrix
 	std::string_view operator()(size_t r, size_t c) const {
 		return cells[r * columns + c];
 	}
@@ -82,6 +91,6 @@ public:
 		}
 		return data[r * col_nb + c];
 	}
-	size_t get_rows() const { return rows_nb; }
-	size_t get_cols() const { return col_nb; }
+	size_t get_rows_nb() const { return rows_nb; }
+	size_t get_columns_nb() const { return col_nb; }
 };

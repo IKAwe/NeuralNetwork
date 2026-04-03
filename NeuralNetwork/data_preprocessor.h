@@ -7,7 +7,7 @@ class Column {
 public:
 	std::string name;
 	size_t index;
-	bool include_column = false; //indicates whether the column is included in the input features or output labels.
+	bool include_column = true; //indicates whether the column is included in the input features or output labels.
 	bool is_target_column = false;
 	virtual ~Column() = default;
 	virtual void fit(const StringMatrix& data)=0;
@@ -35,7 +35,6 @@ struct Dataset {
 };
 
 class DataPreprocessor {
-	Matrix input_data, output_data;  
 	std::vector<std::unique_ptr<Column>> columns;
 public:
 	/**

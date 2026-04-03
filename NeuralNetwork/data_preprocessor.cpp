@@ -100,6 +100,7 @@ double CategoricalColumn::transform(const std::string_view cell) {
 // --- DataPreprocessor Implementation ---
 void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
     columns.clear();
+	if (data.get_rows_nb() < 2) return; // Not enough data to determine column types
     for (size_t c = 0; c < data.get_columns_nb(); ++c) {
         std::string name(data(0, c)); // Header
 
