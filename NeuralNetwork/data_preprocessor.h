@@ -42,7 +42,11 @@ public:
 	 * @param data 
 	 */
 	void initialize_from_data(const StringMatrix& data);
-
+	/**
+	 * @brief Get a reference to the vector of columns. This allows the user to modify the columns - for example to set is_target_column flag or to exclude some columns from the transformation.
+	 * @return The reference to the vector of columns.
+	 */
+	const std::vector<std::unique_ptr<Column>>& get_columns() { return columns; };
 	/**
 	 * @brief Collect information from the data to be able to transform it later. For numerical columns - calculating the mean and standard deviation, 
 	 for categorical columns - identifying the unique categories. This function should be called before transform() and should be called only once for a given dataset.

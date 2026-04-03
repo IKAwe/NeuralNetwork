@@ -119,20 +119,28 @@ namespace NeuralNetworkTest
             DataPreprocessor prep;
             prep.initialize_from_data(data);
 
+			auto& columns = prep.get_columns();
+			Assert::AreEqual(size_t(3), columns.size(), L"Should initialize 3 columns");
+			columns[0]->include_column = false; // Exclude Age from input features
+			columns[2]->is_target_column = true; // Salary as target
             // 2. Act
             prep.fit(data);
             Dataset ds = prep.transform(data);
 
             // 3. Assert
-            // Sprawdzamy wymiary macierzy wynikowych (2 wiersze danych)
             Assert::AreEqual(size_t(2), ds.input_data.get_rows_nb());
-            // Jeœli Salary jest targetem, to input_data ma 2 kolumny (Age, City), a output 1
-            // UWAGA: musisz w kodzie ustawiæ is_target_column = true dla "Salary" przed transform
+            Assert::AreEqual(size_t(1), ds.input_data.get_columns_nb());
+
+			Assert::AreEqual(size_t(2), ds.output_data.get_rows_nb());
+			Assert::AreEqual(size_t(1), ds.output_data.get_columns_nb());
+
+			Assert::AreEqual(0.0, ds.input_data(0, 0), 0.001, L"City A should be transformed to 0");
+
+
         }
 
-        TEST_METHOD(NumericalColumn_Should_Handle_Zero_StdDev)
+        TEST_METHOD(NumericalColumn_Handle_Zero_StdDev_Test)
         {
-            // Test na wypadek, gdy wszystkie liczby s¹ takie same
             StringMatrix data(3, 1);
             data(0, 0) = "Const";
             data(1, 0) = "10";
@@ -142,9 +150,9 @@ namespace NeuralNetworkTest
             col.index = 0;
             col.fit(data);
 
-            // Nie powinno wybuchn¹æ przy dzieleniu przez zero
+			// Theoretically, the std_dev should be zero here, but we should handle this in the transform function to avoid division by zero.
             double result = col.transform("10");
-            Assert::AreEqual(0.0, result, 0.001, L"Should handle zero variance gracefully");
+            Assert::AreEqual(0.0, result, 0.001, L"Should handle zero variance");
         }
     };
 }
