@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string_view>
+#include <stdexcept>
 
 /**
  * @brief 
@@ -69,10 +70,16 @@ public:
 	Matrix(size_t r, size_t c) : rows_nb(r), col_nb(c), data(r* c, 0.0) {};
 	//for saving
 	double& operator()(size_t r, size_t c) {
+		if (r >= rows_nb || c >= col_nb) {
+			throw std::out_of_range("Matrix index out of range");
+		}
 		return data[r * col_nb + c];
 	}
 	//for reading
 	double operator()(size_t r, size_t c) const {
+		if (r >= rows_nb || c >= col_nb) {
+			throw std::out_of_range("Matrix index out of range");
+		}
 		return data[r * col_nb + c];
 	}
 	size_t get_rows() const { return rows_nb; }
