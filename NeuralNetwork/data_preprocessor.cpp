@@ -58,6 +58,14 @@ double NumericalColumn::transform(const std::string_view cell) {
     return (val - mean) / std_dev;
 }
 
+void NumericalColumn::save(std::ostream& out) const {
+    out << "0 " << name << " " << index << " "
+        << is_target_column << " " << mean << " " << std_dev << "\n";
+}
+void NumericalColumn::load(std::istream& in){
+    in >> is_target_column >> mean >> std_dev;
+}
+
 // --- CategoricalColumn Implementation ---
 
 
@@ -96,6 +104,26 @@ double CategoricalColumn::transform(const std::string_view cell) {
 
     return -1.0;
 }
+void CategoricalColumn::save(std::ostream& out) const {
+    out << "1 " << name << " " << index << " "
+        << is_target_column << " " << categories.size();
+    for (const auto& c : categories) {
+        out << " " << c;
+        out << "\n";
+    }
+}
+void CategoricalColumn::load(std::istream& in) {
+    size_t cat_count;
+    in >> is_target_column >> cat_count;
+
+    categories.clear();
+    categories.reserve(cat_count);
+    for (size_t i = 0; i < cat_count; ++i) {
+        std::string cat_name;
+        in >> cat_name;
+        categories.push_back(cat_name);
+    }
+}
 
 // --- DataPreprocessor Implementation ---
 void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
@@ -111,16 +139,12 @@ void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
 
         if (ec == std::errc()) {
 			// Number -> add NumericalColumn
-            auto col = std::make_unique<NumericalColumn>();
-            col->name = name;
-            col->index = c;
+            auto col = std::make_unique<NumericalColumn>(c, name);
             columns.push_back(std::move(col));
         }
         else {
 			// Text -> add CategoricalColumn
-            auto col = std::make_unique<CategoricalColumn>();
-            col->name = name;
-            col->index = c;
+            auto col = std::make_unique<CategoricalColumn>(c, name);
             columns.push_back(std::move(col));
         }
     }
@@ -151,7 +175,7 @@ Dataset DataPreprocessor::transform(const StringMatrix& data) {
 
         for (const auto& col : columns) {
 			if (!col->include_column) continue; // Skip not included
-            double val = col->transform(data(r, col->index));
+            double val = col->transform(data(r, col->get_index()));
 
             if (col->is_target_column) {
                 ds.output_data(r - 1, out_idx++) = val;
@@ -170,19 +194,7 @@ void DataPreprocessor::save(const std::string& filename) const {
 
     file << columns.size() << "\n";
     for (const auto& col : columns) {
-		// Save type (0 for numerical, 1 for categorical) followed by common attributes
-        NumericalColumn* num = dynamic_cast<NumericalColumn*>(col.get());
-        if (num) {
-            file << "0 " << num->name << " " << num->index << " "
-                << num->is_target_column << " " << num->mean << " " << num->std_dev << "\n";
-        }
-        else {
-            CategoricalColumn* cat = dynamic_cast<CategoricalColumn*>(col.get());
-            file << "1 " << cat->name << " " << cat->index << " "
-                << cat->is_target_column << " " << cat->categories.size();
-            for (const auto& c : cat->categories) file << " " << c;
-            file << "\n";
-        }
+        col->save(file);
     }
 }
 
@@ -196,22 +208,22 @@ void DataPreprocessor::load(const std::string& filename) {
 
     for (size_t i = 0; i < col_count; ++i) {
         int type;
-        file >> type;
+        std::string name;
+        size_t index;
+
+        if (!(file >> type >> name >> index)) break;
+
+        std::unique_ptr<Column> col;
+
         if (type == 0) {
-            auto col = std::make_unique<NumericalColumn>();
-            file >> col->name >> col->index >> col->is_target_column >> col->mean >> col->std_dev;
-            columns.push_back(std::move(col));
+            col = std::make_unique<NumericalColumn>(index, name);
         }
         else {
-            auto col = std::make_unique<CategoricalColumn>();
-            size_t cat_count;
-            file >> col->name >> col->index >> col->is_target_column >> cat_count;
-            for (size_t j = 0; j < cat_count; ++j) {
-                std::string cat_name;
-                file >> cat_name;
-                col->categories.push_back(cat_name);
-            }
-            columns.push_back(std::move(col));
+            col = std::make_unique<CategoricalColumn>(index, name);
         }
+
+        col->load(file);
+
+        columns.push_back(std::move(col));
     }
 }

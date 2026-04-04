@@ -68,16 +68,12 @@ namespace NeuralNetworkTest
             data(2, 0) = "20";
             data(3, 0) = "30";
 
-            NumericalColumn col;
-            col.index = 0;
-
+			NumericalColumn col(0, "Age");
             // 2. Act
             col.fit(data);
             double result = col.transform("30"); // (30-20) / std_dev
 
             // 3. Assert
-            Assert::AreEqual(20.0, col.mean, 0.001, L"Mean should be 20");
-			Assert::AreEqual(8.16497, col.std_dev, 0.001, L"StdDev should be approximately 8.16497");
             // StdDev dla 10, 20, 30 wynosi ok. 8.16497
             Assert::IsTrue(result > 0, L"Normalized value for 30 should be positive");
 			Assert::AreEqual(1.22474424, result, 0.001);
@@ -94,14 +90,12 @@ namespace NeuralNetworkTest
             data(3, 0) = "Warszawa";
             data(4, 0) = "Gdansk";
 
-            CategoricalColumn col;
-            col.index = 0;
+			CategoricalColumn col(0, "City");
 
             // 2. Act
             col.fit(data);
 
             // 3. Assert
-            Assert::AreEqual(size_t(3), col.categories.size(), L"Should find 3 unique categories");
             Assert::AreEqual(0.0, col.transform("Gdansk"), L"Gdansk should be index 0");
             Assert::AreEqual(1.0, col.transform("Krakow"), L"Krakow should be index 1");
             Assert::AreEqual(2.0, col.transform("Warszawa"), L"Warszawa should be index 2");
@@ -146,8 +140,7 @@ namespace NeuralNetworkTest
             data(1, 0) = "10";
             data(2, 0) = "10";
 
-            NumericalColumn col;
-            col.index = 0;
+			NumericalColumn col(0, "Const");
             col.fit(data);
 
 			// Theoretically, the std_dev should be zero here, but we should handle this in the transform function to avoid division by zero.

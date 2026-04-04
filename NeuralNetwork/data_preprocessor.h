@@ -6,27 +6,39 @@
 class Column {
 public:
 	std::string name;
-	size_t index;
 	bool include_column = true; //indicates whether the column is included in the input features or output labels.
 	bool is_target_column = false;
-	virtual ~Column() = default;
+
 	virtual void fit(const StringMatrix& data)=0;
 	virtual double transform(const std::string_view cell)=0;
+	size_t get_index() const { return index; };
 	//Maybe add fit_and_transform functions that do both operations in one pass through the data, for efficiency.
+	virtual void save(std::ostream& out) const = 0;
+	virtual void load(std::istream& in) = 0;
+	virtual ~Column() = default;
+protected:
+	size_t index;
+	Column(size_t idx, std::string name) : index(idx), name(std::move(name)) {};
 };
 
 class NumericalColumn : public Column {
-	public:
 	double mean;
 	double std_dev;
+public:
 	void fit(const StringMatrix & data) override;
 	double transform(const std::string_view cell) override;
+	void save(std::ostream& out) const override;
+	void load(std::istream& in) override;
+	NumericalColumn(size_t idx, std::string name) : Column(idx, std::move(name)) {};
 };
 class CategoricalColumn : public Column {
-	public:
 	std::vector<std::string> categories;
+public:
 	void fit(const StringMatrix& data) override;
 	double transform(const std::string_view cell) override;
+	void save(std::ostream& out) const override;
+	void load(std::istream& in) override;
+	CategoricalColumn(size_t idx, std::string name) : Column(idx, std::move(name)) {};
 };
 struct Dataset {
 	Matrix input_data;
