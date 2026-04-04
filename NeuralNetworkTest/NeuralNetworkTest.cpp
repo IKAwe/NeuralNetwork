@@ -154,5 +154,42 @@ namespace NeuralNetworkTest
             double result = col.transform("10");
             Assert::AreEqual(0.0, result, 0.001, L"Should handle zero variance");
         }
+
+        TEST_METHOD(Handle_Edge_Conditions) {
+			// Arrange: mixed data with numerical column having zero variance, invalid numeric data, and categorical column with new/unseen categories. Also test excluding columns.
+            StringMatrix data(5, 3);
+            data(0, 0) = "Const"; data(0, 1) = "Mixed"; data(0, 2) = "Cat";
+
+            data(1, 0) = "10.0";  data(1, 1) = "100";   data(1, 2) = "A";
+            data(2, 0) = "10.0";  data(2, 1) = "ERROR"; data(2, 2) = "B"; 
+            data(3, 0) = "10.0";  data(3, 1) = "200";   data(3, 2) = ""; 
+            data(4, 0) = "10.0";  data(4, 1) = "300";   data(4, 2) = "A";
+
+            DataPreprocessor prep;
+            prep.initialize_from_data(data);
+
+            
+            //for (auto& col : prep.get_columns()) col->include_column = true;
+
+            // --- 2. Test Fit  ---
+            prep.fit(data);
+
+            // --- 3. Test Transform  ---
+            Dataset ds = prep.transform(data);
+
+            Assert::AreEqual(0.0, ds.input_data(0, 0), 0.001, L"Zero variance column should result in 0.0");
+
+            double val_mixed = ds.input_data(1, 1);
+            Assert::IsFalse(std::isnan(val_mixed), L"Invalid numeric data should not result in NaN");
+
+            auto& cat_col = prep.get_columns()[2];
+            double unseen_result = cat_col->transform("Z");
+            Assert::AreEqual(-1.0, unseen_result, L"Unseen category should return -1.0");
+
+            prep.get_columns()[1]->include_column = false;
+            Dataset ds_filtered = prep.transform(data);
+
+            Assert::AreEqual(size_t(2), ds_filtered.input_data.get_columns_nb(), L"Excluded column should not be in the final matrix");
+        }
     };
 }
