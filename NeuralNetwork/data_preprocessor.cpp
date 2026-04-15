@@ -169,6 +169,28 @@ Dataset DataPreprocessor::transform(const StringMatrix& data) {
 
 	Dataset ds(num_rows, input_cols_count, output_cols_count);
 
+	//Calculate category counts for metadata
+	size_t meta_in_idx = 0; // To  prevent out of range access when some columns are not included or all are target columns
+    size_t meta_out_idx = 0;
+
+    for (const auto& col : columns) {
+        if (!col->include_column) continue;
+
+        int cat_count = 0;
+        if (auto cat_col = dynamic_cast<CategoricalColumn*>(col.get())) {
+            cat_count = static_cast<int>(cat_col->get_categories().size());
+        }
+
+        if (col->is_target_column) {
+            // U¿ywamy meta_out_idx, a nie i!
+            ds.metadata.output_category_counts[meta_out_idx++] = cat_count;
+        }
+        else {
+            // U¿ywamy meta_in_idx, a nie i!
+            ds.metadata.input_category_counts[meta_in_idx++] = cat_count;
+        }
+    }
+	// Transform data row by row
     for (size_t r = 1; r < data.get_rows_nb(); ++r) {
         size_t in_idx = 0;
         size_t out_idx = 0;

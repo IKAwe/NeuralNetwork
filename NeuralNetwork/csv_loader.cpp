@@ -34,8 +34,8 @@ StringMatrix load_csv(const std::string& path) {
 	char* end = start + file_size;
 
     //For ever char 
-    for (char* current = start; current < end; ++current) {
-        if (*current == ',' || *current == '\n') {
+    for (char* current = start; current <= end; ++current) {
+        if (*current == ',' || *current == '\n' || current == end) {
             // trim \r
             size_t len = current - start;
             if (len > 0 && *(current - 1) == '\r') len--;
@@ -45,7 +45,7 @@ StringMatrix load_csv(const std::string& path) {
             current_col_nb++;
 
 
-            if (*current == '\n') {
+            if (*current == '\n' || current == end) {
                 if (expected_col_nb == 0) {
                     expected_col_nb = current_col_nb; // The first row defines the expected number of columns
                     matrix.set_columns_nb(expected_col_nb);

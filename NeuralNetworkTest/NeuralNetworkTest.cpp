@@ -42,6 +42,20 @@ namespace NeuralNetworkTest
             Assert::AreEqual("3", std::string(matrix(1, 2)).c_str());
         }
 
+        TEST_METHOD(Handle_Empty_Cells_Test) {
+            std::string path = "empty_cells.csv";
+            std::ofstream f(path);
+			f << "col1,col2,col3\n1,,3\n,5,6\n7,\n";
+            f.close();
+
+            auto matrix = load_csv(path);
+
+			Assert::IsTrue(std::string(matrix(1, 1)).empty(), L"Empty cell should be an empty string");
+			Assert::IsTrue(std::string(matrix(2, 0)).empty(), L"The padding should be added");
+			Assert::IsTrue(std::string(matrix(3, 2)).empty(), L"The padding should be added");
+
+		}
+
         TEST_METHOD(Should_Handle_Windows_Endings) {
             std::string path = "win.csv";
             std::ofstream f(path, std::ios::binary);

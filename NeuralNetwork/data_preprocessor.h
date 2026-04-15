@@ -38,12 +38,21 @@ public:
 	double transform(const std::string_view cell) override;
 	void save(std::ostream& out) const override;
 	void load(std::istream& in) override;
+	const std::vector<std::string>& get_categories() const { return categories; };
 	CategoricalColumn(size_t idx, std::string name) : Column(idx, std::move(name)) {};
 };
+
+struct DatasetMetadata {
+	std::vector<int> input_category_counts; // For categorical columns, the number of unique categories(0 for numerical). This is needed to know how to implement embedding layer.
+	std::vector<int> output_category_counts; 
+	DatasetMetadata(size_t input_column_nb, size_t output_column_nb) : input_category_counts(input_column_nb), output_category_counts(output_column_nb) {};
+};
+
 struct Dataset {
 	Matrix input_data;
 	Matrix output_data;
-	Dataset(size_t row_nb, size_t input_col_nb, size_t output_col_nb) : input_data(row_nb, input_col_nb), output_data(row_nb, output_col_nb) {};
+	DatasetMetadata metadata;
+	Dataset(size_t row_nb, size_t input_col_nb, size_t output_col_nb) : input_data(row_nb, input_col_nb), output_data(row_nb, output_col_nb), metadata(input_col_nb, output_col_nb) {};
 };
 
 class DataPreprocessor {
