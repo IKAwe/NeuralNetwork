@@ -75,7 +75,7 @@ class Matrix{
 	size_t rows_nb = 0;
 	size_t col_nb = 0;
 public:
-
+	Matrix() = default;
 	Matrix(size_t r, size_t c) : rows_nb(r), col_nb(c), data(r* c, 0.0) {};
 	//for saving
 	double& operator()(size_t r, size_t c) {

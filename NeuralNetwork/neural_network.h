@@ -20,7 +20,7 @@ struct Hyperparams {
 class NeuralNetwork {
 private:
     std::vector<std::unique_ptr<Layer>> layers;
-    std::unique_ptr<Loss> loss_function;
+    //std::unique_ptr<Loss> loss_function;
 
 public:
     NeuralNetwork() = default;
@@ -28,7 +28,7 @@ public:
     void add_layer(std::unique_ptr<Layer> layer);
     void delete_last_layer();
 
-    void set_loss(std::unique_ptr<Loss> loss);
+    //void set_loss(std::unique_ptr<Loss> loss);
 
     Matrix predict(const Matrix& inputs);
 
