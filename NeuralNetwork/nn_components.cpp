@@ -84,7 +84,6 @@ bool Dense::load(std::ifstream& input_fstream) {
     size_t rows, cols;
     input_fstream.read(reinterpret_cast<char*>(&rows), sizeof(size_t));
     input_fstream.read(reinterpret_cast<char*>(&cols), sizeof(size_t));
-
 	// alcocate memory for weights and bias
     weights = Matrix(rows, cols);
     bias = Matrix(1, cols);
