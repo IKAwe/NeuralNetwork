@@ -91,6 +91,48 @@ public:
 		}
 		return data[r * col_nb + c];
 	}
+	//Used for X*W
+	Matrix operator*(const Matrix& other) const {
+		if (col_nb != other.rows_nb) {
+			throw std::runtime_error("Matrix dimensions do not match for multiplication");
+		}
+		Matrix result(rows_nb, other.col_nb);
+		for (size_t i = 0; i < rows_nb; ++i) {
+			for (size_t k = 0; k < col_nb; ++k) {
+				for (size_t j = 0; j < other.col_nb; ++j) {
+					result(i, j) += (*this)(i, k) * other(k, j);
+				}
+			}
+		}
+		return result;
+	}
+	Matrix transpose() const {
+		Matrix result(col_nb, rows_nb);
+		for (size_t r = 0; r < rows_nb; ++r) {
+			for (size_t c = 0; c < col_nb; ++c) {
+				result(c, r) = (*this)(r, c);
+			}
+		}
+		return result;
+	}
+	Matrix hadamard(const Matrix& other) const {
+		if (rows_nb != other.rows_nb || col_nb != other.col_nb) {
+			throw std::runtime_error("Dimensions must match for Hadamard product");
+		}
+		Matrix result(rows_nb, col_nb);
+		for (size_t i = 0; i < data.size(); ++i) {
+			result.data[i] = data[i] * other.data[i];
+		}
+		return result;
+	}
+
+	Matrix& operator+=(const Matrix& other) {
+		if (rows_nb != other.rows_nb || col_nb != other.col_nb) {
+			throw std::runtime_error("Dimensions do not match for addition");
+		}
+		for (size_t i = 0; i < data.size(); ++i) data[i] += other.data[i];
+		return *this;
+	}
 	size_t get_rows_nb() const { return rows_nb; }
 	size_t get_columns_nb() const { return col_nb; }
 };
