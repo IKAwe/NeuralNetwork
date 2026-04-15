@@ -80,7 +80,6 @@ bool Dense::save(std::ofstream& output_fstream) const {
 
 bool Dense::load(std::ifstream& input_fstream) {
     if (!input_fstream.is_open()) return false;
-
     size_t rows, cols;
     input_fstream.read(reinterpret_cast<char*>(&rows), sizeof(size_t));
     input_fstream.read(reinterpret_cast<char*>(&cols), sizeof(size_t));
