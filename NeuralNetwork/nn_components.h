@@ -10,11 +10,10 @@ protected:
     size_t input_nb = 0;
     size_t output_nb = 0;
     size_t layer_id;
-    Matrix accumulated_gradients; 
 
 public:
     Layer(size_t id) : layer_id(id) {};
-    Layer(size_t id, size_t inputs_nb_passed, size_t outputs_nb_passed) : layer_id(id), input_nb(inputs_nb_passed), output_nb(outputs_nb_passed), accumulated_gradients(inputs_nb_passed, outputs_nb_passed){};
+    Layer(size_t id, size_t inputs_nb_passed, size_t outputs_nb_passed) : layer_id(id), input_nb(inputs_nb_passed), output_nb(outputs_nb_passed){};
     virtual ~Layer() = default; 
 
     virtual Matrix feedforward(const Matrix& inputs) = 0;
@@ -23,7 +22,7 @@ public:
     virtual bool initialize() = 0;
     virtual void update_params(double lr, size_t batch_size) = 0;
 
-    virtual void zero_gradients();
+    virtual void zero_gradients()=0;
     virtual bool save(std::ofstream& out) const = 0;
     virtual bool load(std::ifstream& in) = 0;
 
@@ -32,6 +31,7 @@ public:
 
 class Dense : public Layer {
 private:
+    Matrix accumulated_gradients;
     Matrix weights;
     Matrix bias;
 
@@ -43,6 +43,10 @@ public:
     void update_params(double lr, size_t batch_size) override;
     bool save(std::ofstream& out) const override;
     bool load(std::ifstream& in) override;
+
+    void zero_gradients() override {accumulated_gradients.zero();} ;
+
+
 };
 
 //class Dropout : public Layer {

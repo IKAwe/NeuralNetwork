@@ -133,21 +133,21 @@ public:
 		for (size_t i = 0; i < data.size(); ++i) data[i] += other.data[i];
 		return *this;
 	}
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 8749cab83681ebbcc9e2b3d7e1c30a90f0df45e6
+	void zero() {
+		std::fill(data.begin(), data.end(), 0.0);
+	}
+	void resize(size_t new_rows, size_t new_cols) {
+		rows_nb = new_rows;
+		col_nb = new_cols;
+		data.resize(new_rows * new_cols, 0.0);
+	}
 	 const std::vector<double>& get_data() const {
 		return data;
 	}
 	 std::vector<double>& get_data_mutable() {
 		 return data;
 	 }
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 8fedd7edd25da4fcba3c6d97acdaa50e55937b59
->>>>>>> 8749cab83681ebbcc9e2b3d7e1c30a90f0df45e6
+
 	size_t get_rows_nb() const { return rows_nb; }
 	size_t get_columns_nb() const { return col_nb; }
 };
