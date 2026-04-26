@@ -46,6 +46,13 @@ public:
 
     void zero_gradients() override {accumulated_gradients.zero();} ;
 
+#ifdef _DEBUG
+    // For testing purposes
+    Matrix& get_weights() { return weights; }
+	Matrix& get_bias() { return bias; }
+	Matrix& get_accumulated_gradients() { return accumulated_gradients; }
+#endif
+
 
 };
 

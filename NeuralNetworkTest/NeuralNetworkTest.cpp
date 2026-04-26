@@ -3,6 +3,7 @@
 #include "CppUnitTest.h"
 #include "csv_loader.h"
 #include "data_structures.h"
+#include "nn_components.h"
 #include "data_preprocessor.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -163,7 +164,7 @@ namespace NeuralNetworkTest
         }
 
         TEST_METHOD(Handle_Edge_Conditions) {
-			// Arrange: mixed data with numerical column having zero variance, invalid numeric data, and categorical column with new/unseen categories. Also test excluding columns.
+			// mixed data with numerical column having zero variance, invalid numeric data, and categorical column with new/unseen categories. Also test excluding columns.
             StringMatrix data(5, 3);
             data(0, 0) = "Const"; data(0, 1) = "Mixed"; data(0, 2) = "Cat";
 
@@ -178,10 +179,8 @@ namespace NeuralNetworkTest
             
             //for (auto& col : prep.get_columns()) col->include_column = true;
 
-            // --- 2. Test Fit  ---
             prep.fit(data);
 
-            // --- 3. Test Transform  ---
             Dataset ds = prep.transform(data);
 
             Assert::AreEqual(0.0, ds.input_data(0, 0), 0.001, L"Zero variance column should result in 0.0");
@@ -197,6 +196,63 @@ namespace NeuralNetworkTest
             Dataset ds_filtered = prep.transform(data);
 
             Assert::AreEqual(size_t(2), ds_filtered.input_data.get_columns_nb(), L"Excluded column should not be in the final matrix");
+        }
+    };
+
+    TEST_CLASS(DenseLayerTest) {
+    public:
+
+        TEST_METHOD(Dense_Feedforward_Result_Test) {
+            Dense layer(0, 2, 1);
+            
+            layer.get_weights()(0, 0) = 0.5;
+            layer.get_weights()(1, 0) = 0.1;
+            layer.get_bias()(0, 0) = 0.2;
+
+            Matrix inputs(1, 2);
+            inputs(0, 0) = 1.0;
+            inputs(0, 1) = 2.0;
+
+            Matrix output = layer.feedforward(inputs);
+
+            // (1.0 * 0.5) + (2.0 * 0.1) + 0.2 = 0.9
+            Assert::AreEqual(0.9, output(0, 0), 0.0001, L"Forward pass result is incorrect");
+        }
+
+        TEST_METHOD(Dense_Backpropagate_InputGradients_Test) {
+            Dense layer(0, 2, 1);
+            layer.get_weights()(0, 0) = 0.5;
+            layer.get_weights()(1, 0) = 0.1;
+
+            Matrix inputs(1, 2); 
+
+            Matrix grad_next(1, 1);
+            grad_next(0, 0) = 1.0;
+
+            //  dL/dX = grad_next * W^T
+            Matrix grad_prev = layer.backpropagate(inputs, grad_next);
+
+            Assert::AreEqual(0.5, grad_prev(0, 0), 0.0001, L"Input gradient [0] is incorrect");
+            Assert::AreEqual(0.1, grad_prev(0, 1), 0.0001, L"Input gradient [1] is incorrect");
+        }
+
+        TEST_METHOD(Dense_Backpropagate_WeightGradients_Accumulation_Test) {
+            Dense layer(0, 2, 1);
+            Matrix inputs(1, 2);
+            inputs(0, 0) = 10.0;
+            inputs(0, 1) = 20.0;
+
+            Matrix grad_next(1, 1);
+            grad_next(0, 0) = 1.0;
+
+            layer.zero_gradients();
+
+            // dW = inputs^T * grad_next
+            layer.backpropagate(inputs, grad_next);
+
+            // dW should be equal [10.0, 20.0]^T
+            Assert::AreEqual(10.0, layer.get_accumulated_gradients()(0, 0), 0.0001);
+            Assert::AreEqual(20.0, layer.get_accumulated_gradients()(1, 0), 0.0001);
         }
     };
 }

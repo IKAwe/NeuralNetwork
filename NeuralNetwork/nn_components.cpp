@@ -2,10 +2,9 @@
 #include <random>
 
 Dense::Dense(size_t id, size_t in_dim, size_t out_dim)
-    : Layer(id, in_dim, out_dim), weights(in_dim, out_dim), bias(1, out_dim) {}
+    : Layer(id, in_dim, out_dim), weights(in_dim, out_dim), bias(1, out_dim), accumulated_gradients(in_dim, out_dim) {}
 
 bool Dense::initialize() {
-	accumulated_gradients.resize(input_nb, output_nb);
     // He initialization
     std::default_random_engine generator;
     double std_dev = std::sqrt(2.0 / weights.get_rows_nb());
