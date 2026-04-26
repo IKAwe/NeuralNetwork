@@ -2,6 +2,8 @@
 #include <vector>
 #include <string_view>
 #include <stdexcept>
+#include <iostream>
+#include <iomanip>
 
 /**
  * @brief For usage especially when we dont know the number of rows. First - add al the cells with add_cell, then set the number of columns with set_columns_nb, 
@@ -140,6 +142,15 @@ public:
 		rows_nb = new_rows;
 		col_nb = new_cols;
 		data.resize(new_rows * new_cols, 0.0);
+	}
+	const void print() const {
+		for (size_t r = 0; r < rows_nb; ++r) {
+			std::cout << "[";
+			for (size_t c = 0; c < col_nb; ++c) {
+				std::cout << std::setw(6) << std::right << (*this)(r, c) << " ";
+			}
+			std::cout << "]" << std::endl;
+		}
 	}
 	 const std::vector<double>& get_data() const {
 		return data;
