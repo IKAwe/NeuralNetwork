@@ -47,6 +47,9 @@
     <ClInclude Include="loss_functions.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="activation_functions.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="StudentPerformanceFactors.csv">

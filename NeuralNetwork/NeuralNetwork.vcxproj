@@ -133,6 +133,7 @@
     <ClCompile Include="nn_components.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="activation_functions.h" />
     <ClInclude Include="csv_loader.h" />
     <ClInclude Include="data_preprocessor.h" />
     <ClInclude Include="loss_functions.h" />
