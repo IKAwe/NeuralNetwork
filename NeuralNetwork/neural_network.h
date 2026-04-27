@@ -8,19 +8,20 @@
 #include "data_structures.h"
 #include "data_preprocessor.h"
 #include "nn_components.h"
-#include "data_structures.h"
+#include "loss_functions.h"
 
 struct Hyperparams {
-    size_t epochs;
-    size_t batch_size;
-    double learning_rate;
+    size_t epochs=10;
+    size_t batch_size=32;
+    double learning_rate=0.01;
+	Hyperparams() = default;
     Hyperparams(size_t e, size_t b, double lr) : epochs(e), batch_size(b), learning_rate(lr) {}
 };
 
 class NeuralNetwork {
 private:
     std::vector<std::unique_ptr<Layer>> layers;
-    //std::unique_ptr<Loss> loss_function;
+    std::unique_ptr<Loss> loss_function;
 
 public:
     NeuralNetwork() = default;
@@ -34,7 +35,10 @@ public:
 
     void train(const Dataset& dataset, const Hyperparams& params);
 
-    Matrix test(const Matrix& inputs, const Matrix& targets);
+    void set_loss(std::unique_ptr<Loss> loss) {
+        loss_function = std::move(loss);
+	}
+    double test(const Matrix& inputs, const Matrix& targets);
 
     bool save(const std::string& filename);
     bool load(const std::string& filename);

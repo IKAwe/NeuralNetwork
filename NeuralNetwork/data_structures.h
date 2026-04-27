@@ -77,7 +77,7 @@ class Matrix{
 	size_t rows_nb = 0;
 	size_t col_nb = 0;
 public:
-	Matrix() = default;
+	//Matrix() = default;
 	Matrix(size_t r, size_t c) : rows_nb(r), col_nb(c), data(r* c, 0.0) {};
 	//for saving
 	double& operator()(size_t r, size_t c) {
@@ -143,7 +143,7 @@ public:
 		col_nb = new_cols;
 		data.resize(new_rows * new_cols, 0.0);
 	}
-	const void print() const {
+	void print() const {
 		for (size_t r = 0; r < rows_nb; ++r) {
 			std::cout << "[";
 			for (size_t c = 0; c < col_nb; ++c) {

@@ -27,6 +27,9 @@ public:
     virtual bool load(std::ifstream& in) = 0;
 
     size_t get_id() const { return layer_id; }
+
+	size_t get_input_nb() const { return input_nb; }
+	size_t get_output_nb() const { return output_nb; }
 };
 
 class Dense : public Layer {
