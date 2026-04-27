@@ -5,6 +5,8 @@
 #include "data_structures.h"
 #include "nn_components.h"
 #include "data_preprocessor.h"
+#include "neural_network.h"
+#include "loss_functions.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -253,6 +255,68 @@ namespace NeuralNetworkTest
             // dW should be equal [10.0, 20.0]^T
             Assert::AreEqual(10.0, layer.get_accumulated_gradients()(0, 0), 0.0001);
             Assert::AreEqual(20.0, layer.get_accumulated_gradients()(1, 0), 0.0001);
+        }
+    };
+
+    TEST_CLASS(NeuralNetworkTest) {
+    public:
+        TEST_METHOD(Predict_DenseLayers_Test) {
+            NeuralNetwork nn;
+
+            auto l1 = std::make_unique<Dense>(0, 2, 2);
+            auto l2 = std::make_unique<Dense>(1, 2, 1);
+
+            l1->get_weights()(0, 0) = 0.1; l1->get_weights()(0, 1) = 0.2;
+            l1->get_weights()(1, 0) = 0.3; l1->get_weights()(1, 1) = 0.4;
+            l1->get_bias()(0, 0) = 0.5;    l1->get_bias()(0, 1) = 0.5;
+
+            l2->get_weights()(0, 0) = 0.5;
+            l2->get_weights()(1, 0) = 1.0;
+            l2->get_bias()(0, 0) = 0.1;
+
+            nn.add_layer(std::move(l1));
+            nn.add_layer(std::move(l2));
+
+            Matrix inputs(1, 2);
+            inputs(0, 0) = 1.0;
+            inputs(0, 1) = 0.5;
+
+            Matrix result = nn.predict(inputs);
+
+            Assert::AreEqual(1.375, result(0, 0), 0.0001, L"NeuralNetwork predict result mismatch!");
+
+            Assert::AreEqual((size_t)1, result.get_rows_nb());
+            Assert::AreEqual((size_t)1, result.get_columns_nb());
+        }
+
+        TEST_METHOD(Predict_Without_Layers_Should_Throw) {
+            NeuralNetwork nn;
+            Matrix inputs(1, 2);
+            inputs(0, 0) = 1.0;
+            inputs(0, 1) = 0.5;
+            auto func = [&nn, &inputs]() { nn.predict(inputs); };
+            Assert::ExpectException<std::runtime_error>(func, L"Predicting without layers should throw an exception");
+		}
+
+        TEST_METHOD(NeuralNetwork_Loss_and_Test_Test) {
+            NeuralNetwork nn;
+
+            nn.set_loss(std::make_unique<MSE>());
+
+            auto layer = std::make_unique<Dense>(0, 1, 1);
+			layer->get_weights()(0, 0) = 2.0;
+			layer->get_bias()(0, 0) = 0.0;
+
+            nn.add_layer(std::move(layer));
+            // Data: input [1.0], target [3.0]
+            // Prediction: 1.0 * 2.0 = 2.0
+            // Error (MSE): (2.0 - 3.0)^2 = 1.0
+            Matrix in(1, 1); in(0, 0) = 1.0;
+            Matrix target(1, 1); target(0, 0) = 3.0;
+
+            double result = nn.test(in, target);
+
+            Assert::AreEqual(1.0, result, 0.0001, L"Loss calculation via Loss class failed!");
         }
     };
 }
