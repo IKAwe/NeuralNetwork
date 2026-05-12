@@ -29,6 +29,8 @@ public:
     void add_layer(std::unique_ptr<Layer> layer);
     void delete_last_layer();
 
+    void clear_layers() {layers.clear();}
+
     //void set_loss(std::unique_ptr<Loss> loss);
 
     Matrix predict(const Matrix& inputs);

@@ -20,9 +20,9 @@ class LayerMaker {
 public:
     static inline std::map<std::string, LayerType> registry = {
         {"Dense", LayerType::Dense},
-        {"ReLU", LayerType::ReLU},
-        {"Sigmoid", LayerType::Sigmoid},
-        {"Dropout", LayerType::Dropout}
+        //{"ReLU", LayerType::ReLU},
+        //{"Sigmoid", LayerType::Sigmoid},
+        //{"Dropout", LayerType::Dropout}
     };
 
     static std::vector<const char*> get_available_names() {

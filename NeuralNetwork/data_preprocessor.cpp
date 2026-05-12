@@ -75,7 +75,9 @@ void CategoricalColumn::fit(const StringMatrix& data) {
     raw_views.reserve(data.get_rows_nb() - 1);
 
     for (size_t r = 1; r < data.get_rows_nb(); ++r) {
-        raw_views.push_back(data(r, index));
+        if (!data(r, index).empty()) {
+            raw_views.push_back(data(r, index));
+        }
     }
 
 	// Sort string_views to bring duplicates together

@@ -128,6 +128,7 @@
     <ClCompile Include="csv_loader.cpp" />
     <ClCompile Include="data_preprocessor.cpp" />
     <ClCompile Include="data_structures.h" />
+    <ClCompile Include="layer_maker.h" />
     <ClCompile Include="neural_network.cpp" />
     <ClCompile Include="neural_network.h" />
     <ClCompile Include="nn_components.cpp" />
