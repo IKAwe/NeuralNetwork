@@ -62,7 +62,7 @@ double NeuralNetwork::test(const Matrix& inputs, const Matrix& targets) {
 }
 
 
-void NeuralNetwork::train(const Dataset& dataset, const Hyperparams& params) {
+void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params) {
     if (!loss_function) {
         throw std::runtime_error("NeuralNetwork::train - Loss function was not added");
     }
@@ -70,10 +70,27 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams& params) {
     const Matrix& inputs = dataset.input_data;
     const Matrix& targets = dataset.output_data;
     size_t total_samples = inputs.get_rows_nb();
-
+    
     if (total_samples == 0) {
         throw std::runtime_error("NeuralNetwork::train - Dataset is empty");
     }
+    if (targets.get_columns_nb() == 0) {
+        throw std::runtime_error("NeuralNetwork:train - No target column");
+    }
+    if (inputs.get_columns_nb() != layers.front()->get_input_nb()) {
+        throw std::runtime_error(
+            "NeuralNetwork::train - Input dimension mismatch. "
+            "Dataset input columns: " + std::to_string(inputs.get_columns_nb()) +
+            ", Expected: " + std::to_string(layers.front()->get_input_nb())
+        );
+	}
+    if (targets.get_columns_nb() != layers.back()->get_output_nb()) {
+        throw std::runtime_error(
+            "NeuralNetwork::train - Target dimension mismatch. "
+            "Dataset target columns: " + std::to_string(targets.get_columns_nb()) +
+            ", Expected: " + std::to_string(layers.back()->get_output_nb())
+        );
+	}
 
     for (size_t epoch = 0; epoch < params.epochs; ++epoch) {
 

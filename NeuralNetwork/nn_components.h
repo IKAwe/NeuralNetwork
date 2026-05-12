@@ -35,6 +35,7 @@ public:
 class Dense : public Layer {
 private:
     Matrix accumulated_gradients;
+	Matrix accumulated_bias_gradients;
     Matrix weights;
     Matrix bias;
 
@@ -47,7 +48,7 @@ public:
     bool save(std::ofstream& out) const override;
     bool load(std::ifstream& in) override;
 
-    void zero_gradients() override {accumulated_gradients.zero();} ;
+    void zero_gradients() override {accumulated_gradients.zero(); accumulated_bias_gradients.zero(); } ;
 
 #ifdef _DEBUG
     // For testing purposes

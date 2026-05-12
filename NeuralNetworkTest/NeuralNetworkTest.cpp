@@ -256,6 +256,26 @@ namespace NeuralNetworkTest
             Assert::AreEqual(10.0, layer.get_accumulated_gradients()(0, 0), 0.0001);
             Assert::AreEqual(20.0, layer.get_accumulated_gradients()(1, 0), 0.0001);
         }
+        TEST_METHOD(Dense_Parameters_Update_Test) {
+            Dense layer(0, 2, 1);
+            layer.get_weights()(0, 0) = 0.5;
+            layer.get_weights()(1, 0) = 0.1;
+            layer.get_bias()(0, 0) = 0.2;
+            Matrix inputs(1, 2);
+            inputs(0, 0) = 10.0;
+            inputs(0, 1) = 20.0;
+            Matrix grad_next(1, 1);
+            grad_next(0, 0) = 1.0;
+            layer.zero_gradients();
+            layer.backpropagate(inputs, grad_next);
+            double learning_rate = 0.01;
+            size_t batch_size = 1;
+            layer.update_params(learning_rate, batch_size);
+            // New weights should be W - lr * dW
+            Assert::AreEqual(0.5 - learning_rate * 10.0, layer.get_weights()(0, 0), 0.0001);
+            Assert::AreEqual(0.1 - learning_rate * 20.0, layer.get_weights()(1, 0), 0.0001);
+			Assert::AreEqual(0.2 - learning_rate * grad_next(0, 0), layer.get_bias()(0, 0), 0.0001);
+        }
     };
 
     TEST_CLASS(NeuralNetworkTest) {

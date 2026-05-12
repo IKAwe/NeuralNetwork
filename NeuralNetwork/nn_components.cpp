@@ -2,7 +2,7 @@
 #include <random>
 
 Dense::Dense(size_t id, size_t in_dim, size_t out_dim)
-    : Layer(id, in_dim, out_dim), weights(in_dim, out_dim), bias(1, out_dim), accumulated_gradients(in_dim, out_dim) {}
+    : Layer(id, in_dim, out_dim), weights(in_dim, out_dim), bias(1, out_dim), accumulated_gradients(in_dim, out_dim), accumulated_bias_gradients(1, out_dim) {}
 
 bool Dense::initialize() {
     // He initialization
@@ -43,6 +43,13 @@ Matrix Dense::backpropagate(const Matrix& inputs, const Matrix& gradients_from_n
             accumulated_gradients(r, c) += dW(r, c);
         }
     }
+	// Calculate gradients for bias (dL/db)
+    for (size_t r = 0; r < gradients_from_next_layer.get_rows_nb(); ++r) {
+        for (size_t c = 0; c < gradients_from_next_layer.get_columns_nb(); ++c) {
+            // Bias to wektor wierszowy (1 x C), wiêc indeks wiersza to zawsze 0
+            accumulated_bias_gradients(0, c) += gradients_from_next_layer(r, c);
+        }
+    }
     // Calc graident for the inputs to the layer (dL/dz)
     Matrix weights_T = weights.transpose();
     Matrix gradients_to_prev_layer = gradients_from_next_layer * weights_T;
@@ -57,6 +64,13 @@ void Dense::update_params(double lr, size_t batch_size) {
     for (size_t r = 0; r < weights.get_rows_nb(); ++r) {
         for (size_t c = 0; c < weights.get_columns_nb(); ++c) {
             weights(r, c) -= factor * accumulated_gradients(r, c);
+        }
+    }
+    //Update bias
+    for (size_t r = 0; r < bias.get_rows_nb(); ++r) {
+        for (size_t c = 0; c < bias.get_columns_nb(); ++c) {
+            // Zak³adam, ¿e masz zmienn¹ przetrzymuj¹c¹ gradienty biasu z backpropagate!
+            bias(r, c) -= factor * accumulated_bias_gradients(r, c);
         }
     }
     // Zero the gradients after a batch
