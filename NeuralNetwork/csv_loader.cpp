@@ -3,6 +3,22 @@
 #include <filesystem>
 #include <string_view>
 
+std::vector<std::string> find_csv_files(const std::string& folder)
+{
+    std::vector<std::string> files;
+
+    for (const auto& entry : std::filesystem::directory_iterator(folder))
+    {
+        if (entry.is_regular_file())
+        {
+            auto path = entry.path();
+            if (path.extension() == ".csv")
+                files.push_back(path.string());
+        }
+    }
+
+    return files;
+}
 /**
  * @brief Read a CSV file and load its content into a StringMatrix. The function reads the entire file into a buffer, then parses it to fill the cells of the matrix.
  * @param path The path to the CSV file to be loaded.

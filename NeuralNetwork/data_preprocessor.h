@@ -11,7 +11,6 @@ public:
 
 	virtual void fit(const StringMatrix& data)=0;
 	virtual double transform(const std::string_view cell)=0;
-	size_t get_index() const { return index; };
 	//Maybe add fit_and_transform functions that do both operations in one pass through the data, for efficiency.
 	virtual void save(std::ostream& out) const = 0;
 	virtual void load(std::istream& in) = 0;
@@ -19,12 +18,17 @@ public:
 protected:
 	size_t index;
 	Column(size_t idx, std::string name) : index(idx), name(std::move(name)) {};
+public:
+	size_t get_index() const { return index; };
 };
 
 class NumericalColumn : public Column {
-	double mean;
-	double std_dev;
+	double mean = 0.0;
+	double std_dev = 0.0;
 public:
+	double get_mean() const { return mean; };
+	double get_std_dev() const { return std_dev; };
+
 	void fit(const StringMatrix & data) override;
 	double transform(const std::string_view cell) override;
 	void save(std::ostream& out) const override;
@@ -68,6 +72,7 @@ public:
 	 * @return The reference to the vector of columns.
 	 */
 	const std::vector<std::unique_ptr<Column>>& get_columns() { return columns; };
+	std::vector<std::unique_ptr<Column>>& get_columns_mutable() { return columns; };
 	/**
 	 * @brief Collect information from the data to be able to transform it later. For numerical columns - calculating the mean and standard deviation, 
 	 for categorical columns - identifying the unique categories. This function should be called before transform() and should be called only once for a given dataset.
