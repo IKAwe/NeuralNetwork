@@ -190,7 +190,7 @@
     <None Include="..\README.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Users\lisik\source\repos\IKAwe\NeuralNetwork\NeuralNetwork\NeuralNetwork.vcxproj">
+    <ProjectReference Include="..\..\..\NeuralNetwork\NeuralNetwork.vcxproj">
       <Project>{41acf756-0669-4638-8556-832a166dff20}</Project>
     </ProjectReference>
   </ItemGroup>
