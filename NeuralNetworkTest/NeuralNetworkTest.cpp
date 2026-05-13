@@ -199,6 +199,24 @@ namespace NeuralNetworkTest
 
             Assert::AreEqual(size_t(2), ds_filtered.input_data.get_columns_nb(), L"Excluded column should not be in the final matrix");
         }
+
+        TEST_METHOD(Should_Save_Load_Transform_Datapreprocessor) {
+            StringMatrix data(4, 2);
+            data(0, 0) = "Const"; data(0, 1) = "Mixed";
+
+            data(1, 0) = "10.0";  data(1, 1) = "A";
+            data(2, 0) = "20.0";  data(2, 1) = "B";
+
+            DataPreprocessor prep;
+            prep.initialize_from_data(data);
+            prep.fit(data);
+            auto& initial_columns = prep.get_columns();
+            prep.save("datapreprocessor_test");
+            DataPreprocessor loaded_prep;
+            loaded_prep.load("datapreprocessor_test");
+            auto& loaded_columns = loaded_prep.get_columns();
+            auto& first_col = dynamic_cast<NumericalColumn*>(&loaded_columns[0])
+        }
     };
 
     TEST_CLASS(DenseLayerTest) {

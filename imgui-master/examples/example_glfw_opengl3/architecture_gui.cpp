@@ -5,7 +5,7 @@
 
 void show_architecture_settings(AppState& state) {
 
-    // Rysowanie dynamicznej tabeli warstw (zastêpuje stary kod)
+    // Rysowanie dynamicznej tabeli warstw
     if (ImGui::BeginTable("LayersTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         ImGui::TableSetupColumn("Type");
         ImGui::TableSetupColumn("In", ImGuiTableColumnFlags_WidthFixed, 40.0f);
@@ -31,7 +31,6 @@ void show_architecture_settings(AppState& state) {
             // 1. TYP WARSTWY
             ImGui::TableSetColumnIndex(0);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            // Pobieramy nazwy z naszej Fabryki
             ImGui::Combo("##type", &state.gui_layers[i].type_index, state.layer_names.data(), (int)state.layer_names.size());
 
             // 2. WEJŒCIA (In)
@@ -61,7 +60,6 @@ void show_architecture_settings(AppState& state) {
             ImGui::TableSetColumnIndex(2);
             ImGui::SetNextItemWidth(-FLT_MIN);
             if (current_type  == LayerType::Dense) {
-                // ZMIANA: Zablokuj edycjê dla ostatniej warstwy, jeœli wymusza to dataset
                 if (i == state.gui_layers.size() - 1 && state.dataset.has_value()) {
                     ImGui::TextDisabled("%d (Cel)", state.gui_layers[i].outputs);
                 }
@@ -76,7 +74,6 @@ void show_architecture_settings(AppState& state) {
             // 4. PARAMETRY
             ImGui::TableSetColumnIndex(3);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            // Indeks 3 w naszym systemie to "Dropout"
             if (state.gui_layers[i].type_index == 3) {
                 ImGui::SliderFloat("Rate", &state.gui_layers[i].dropout_rate, 0.0f, 1.0f, "%.2f");
             }
@@ -91,7 +88,7 @@ void show_architecture_settings(AppState& state) {
 
     // Przyciski zarz¹dzania tabel¹
     if (ImGui::Button("+ add layer", ImVec2(100, 30))) {
-        state.gui_layers.push_back(LayerUI()); // Dodaje domyœln¹ strukturê konfiguracyjn¹
+        state.gui_layers.push_back(LayerUI()); 
     }
     ImGui::SameLine();
     if (!state.gui_layers.empty()) {

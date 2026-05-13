@@ -47,5 +47,5 @@ private:
 
 public:
     AppGUI() = default;
-    void render(); // G³ówna funkcja wywo³ywana co klatkê
+    void render();
 };

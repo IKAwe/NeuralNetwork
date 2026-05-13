@@ -7,7 +7,6 @@
 void show_col_statistics(const std::unique_ptr<Column>& col) {
     ImGui::TableSetColumnIndex(3);
 
-    // Jeœli kolumna nie jest brana pod uwagê...
     if (!col->include_column ) {
         ImGui::TextDisabled("Excluded");
         ImGui::TableSetColumnIndex(4);
@@ -15,22 +14,18 @@ void show_col_statistics(const std::unique_ptr<Column>& col) {
         return;
     }
 
-    // DODAJ TO: Musisz zrzutowaæ wskaŸnik wewn¹trz tej funkcji
     auto* num_col = dynamic_cast<NumericalColumn*>(col.get());
     auto* cat_col = dynamic_cast<CategoricalColumn*>(col.get());
 
     if (num_col) {
-        // Dla numerycznych: Œrednia w kolumnie 3, Odchylenie w kolumnie 4
         ImGui::Text("%.2f", num_col->get_mean());
         ImGui::TableSetColumnIndex(4);
         ImGui::Text("%.2f", num_col->get_std_dev());
     }
     else if (cat_col) {
-        // Dla kategorycznych: Podgl¹d kategorii w kolumnie 3
         const auto& cats = cat_col->get_categories();
         std::string preview = "";
 
-        // Sklejamy pierwsze 2 kategorie do podgl¹du
         int show_count = std::min(2, (int)cats.size());
         for (int j = 0; j < show_count; ++j) {
             preview += cats[j];
@@ -42,19 +37,18 @@ void show_col_statistics(const std::unique_ptr<Column>& col) {
 
         ImGui::TextUnformatted(preview.c_str());
 
-        // Kolumna 4 jest pusta dla kategorycznych
         ImGui::TableSetColumnIndex(4);
         ImGui::TextDisabled("-");
     }
 }
 
 void show_initialized_col(std::unique_ptr<Column>& col) {
-    // 3. Include checkbox (Zmienia wprost wartoœæ w obiekcie)
+    //  Include checkbox
     ImGui::TableSetColumnIndex(3);
     ImGui::PushID(col->get_index());
     ImGui::Checkbox("##inc", &col->include_column);
 
-    // 4. Is Target checkbox (Zmienia wprost wartoœæ w obiekcie)
+    // Is Target checkbox
     ImGui::TableSetColumnIndex(4);
     if (ImGui::Checkbox("##target", &col->is_target_column)) {
     }
@@ -64,7 +58,6 @@ void show_initialized_col(std::unique_ptr<Column>& col) {
 
 
 void show_preprocessor_settings(AppState& state) {
-    // WAzNE: U¿ywamy get_columns_mutable(), ¿ebyœmy mogli modyfikowaæ kolumny!
     auto& columns = state.preprocessor.get_columns_mutable();
 
     if (columns.empty()) {
@@ -106,7 +99,7 @@ void show_preprocessor_settings(AppState& state) {
             ImGui::TableSetColumnIndex(1);
             ImGui::TextUnformatted(col->name.c_str());
 
-            // 2. Type (Dynamic cast - odpytujemy wprost klasê)
+            // 2. Type
             ImGui::TableSetColumnIndex(2);
             if (dynamic_cast<NumericalColumn*>(col.get())) {
                 ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Numerical");

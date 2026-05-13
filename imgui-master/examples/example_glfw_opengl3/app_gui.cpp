@@ -24,7 +24,7 @@ void AppGUI::renderTrainTab() {
             state.csv_files = find_csv_files();
         }
 
-        // Przygotowujemy etykietê aktualnie wybranego pliku
+        // Etykieta aktualnie wybranego pliku
         const char* preview_value = state.csv_files.empty() ? "No files found" : state.csv_files[state.selected_file_idx].c_str();
 
         if (ImGui::BeginCombo("Select CSV", preview_value)) {
@@ -56,12 +56,11 @@ void AppGUI::renderTrainTab() {
         show_architecture_settings(state);
 
         // --- Kolumna 3: Wyniki ---
-        // (Reszta pozostaje bez zmian)
         ImGui::TableSetColumnIndex(2);
         ImGui::Text("Training Process");
         ImGui::Separator();
         ImGui::BeginChild("Logs", ImVec2(0, 150), true);
-        ImGui::Text("Tu beda leciec logi z treningu...");
+        ImGui::Text("Logs from training...");
         ImGui::EndChild();
 
         if (state.loss_history.empty()) { state.loss_history = { 0.9f, 0.5f, 0.2f, 0.1f }; }
@@ -72,7 +71,7 @@ void AppGUI::renderTrainTab() {
 }
 
 // -----------------------------------------------------------------
-// ZAK£ADKA PREDICT (pozostaje bez zmian z Twojego kodu)
+// ZAK£ADKA PREDICT
 // -----------------------------------------------------------------
 void AppGUI::renderPredictTab() {
     if (ImGui::BeginTable("PredictLayout", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchSame)) {
@@ -95,16 +94,16 @@ void AppGUI::renderPredictTab() {
         ImGui::Text("Statistics");
         ImGui::Separator();
         ImGui::BeginChild("Stats", ImVec2(0, 0), true);
-        ImGui::Text("Tu beda wyniki predykcji...");
+        ImGui::Text("Results of predictions...");
         ImGui::EndChild();
 
         ImGui::EndTable();
     }
 }
 
-// -----------------------------------------------------------------
-// G£ÓWNA RAMA OKNA (Skleja wszystko w ca³oœæ)
-// -----------------------------------------------------------------
+// ---------------------------------------------------------------
+// G£ÓWNA RAMA OKNA 
+// ---------------------------------------------------------------
 void AppGUI::render() {
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_FirstUseEver);

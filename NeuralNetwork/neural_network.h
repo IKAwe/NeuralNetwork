@@ -31,8 +31,6 @@ public:
 
     void clear_layers() {layers.clear();}
 
-    //void set_loss(std::unique_ptr<Loss> loss);
-
     Matrix predict(const Matrix& inputs);
 
     void train(const Dataset& dataset, const Hyperparams params);

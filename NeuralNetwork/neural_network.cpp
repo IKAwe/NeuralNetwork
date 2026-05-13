@@ -50,12 +50,11 @@ Matrix NeuralNetwork::predict(const Matrix& inputs) {
 
 double NeuralNetwork::test(const Matrix& inputs, const Matrix& targets) {
     if (!loss_function) {
-        throw std::runtime_error("NeuralNetwork::test - Nie ustawiono funkcji straty!");
+        throw std::runtime_error("NeuralNetwork::test - No loss function was added!");
     }
 
     Matrix predictions = predict(inputs);
 
-    // U¿ywamy naszej nowej klasy
     double error = loss_function->calculate(predictions, targets);
 
     return error;
