@@ -60,12 +60,26 @@ void AppGUI::renderTrainTab() {
         ImGui::TableSetColumnIndex(2);
         ImGui::Text("Training Process");
         ImGui::Separator();
-        ImGui::BeginChild("Logs", ImVec2(0, 150), true);
-        ImGui::Text("Tu beda leciec logi z treningu...");
-        ImGui::EndChild();
+        {
+            std::lock_guard<std::mutex> lock(state.gui_mutex);
 
-        if (state.loss_history.empty()) { state.loss_history = { 0.9f, 0.5f, 0.2f, 0.1f }; }
-        ImGui::PlotLines("Loss", state.loss_history.data(), state.loss_history.size(), 0, nullptr, 0.0f, 1.0f, ImVec2(-FLT_MIN, 150));
+            ImGui::BeginChild("Logs", ImVec2(0, 150), true);
+            for (const auto& log : state.training_logs) {
+                ImGui::TextUnformatted(log.c_str());
+            }
+            if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
+                ImGui::SetScrollHereY(1.0f);
+            }
+            ImGui::EndChild();
+
+            if (!state.loss_history.empty()) {
+                ImGui::PlotLines("Loss", state.loss_history.data(), (int)state.loss_history.size(),
+                    0, nullptr, FLT_MAX, FLT_MAX, ImVec2(-FLT_MIN, 150));
+            }
+            else {
+                ImGui::TextDisabled("Waiting for training to start...");
+            }
+        }
 
         ImGui::EndTable();
     }

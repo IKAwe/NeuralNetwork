@@ -2,6 +2,7 @@
 #include "layer_maker.h"
 #include "app_gui.h"
 #include "imgui.h"
+#include <functional>
 
 void show_architecture_settings(AppState& state) {
 
@@ -157,7 +158,12 @@ void show_architecture_settings(AppState& state) {
             state.is_training = true;
 
             std::thread([&state]() {
-                state.nn.train(state.dataset.value(), state.hyperparams);
+                std::function<void(EpochStats)> on_epoch_end = [&state](EpochStats stats) {
+                    std::lock_guard<std::mutex> lock(state.gui_mutex);
+                    state.loss_history.push_back(static_cast<float>(stats.loss));
+                    state.training_logs.push_back("Epoch [" + std::to_string(stats.epoch) + "] - Loss: " + std::to_string(stats.loss));
+                    };
+                state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
                 state.is_training = false;
                 }).detach();
         }

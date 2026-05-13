@@ -55,14 +55,13 @@ double NeuralNetwork::test(const Matrix& inputs, const Matrix& targets) {
 
     Matrix predictions = predict(inputs);
 
-    // U¿ywamy naszej nowej klasy
     double error = loss_function->calculate(predictions, targets);
 
     return error;
 }
 
 
-void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params) {
+void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std::function<void(EpochStats)> on_epoch_end) {
     if (!loss_function) {
         throw std::runtime_error("NeuralNetwork::train - Loss function was not added");
     }
@@ -120,5 +119,10 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params) {
         for (auto& layer : layers) {
             layer->update_params(params.learning_rate, total_samples);
         }
+		//Send epoch stats to callback
+        if (on_epoch_end) {
+            double epoch_loss = loss_function->calculate(predict(inputs), targets);
+            on_epoch_end(EpochStats(epoch, epoch_loss));
+		}
     }
 }
