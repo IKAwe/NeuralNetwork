@@ -1,9 +1,14 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <string_view>
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
+#ifdef USE_CUDA
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+#endif
+
 
 /**
  * @brief For usage especially when we dont know the number of rows. First - add al the cells with add_cell, then set the number of columns with set_columns_nb, 
@@ -95,6 +100,7 @@ public:
 	}
 	//Used for X*W
 	Matrix operator*(const Matrix& other) const {
+#ifndef USE_CUDA 
 		if (col_nb != other.rows_nb) {
 			throw std::runtime_error("Matrix dimensions do not match for multiplication");
 		}
@@ -107,6 +113,53 @@ public:
 			}
 		}
 		return result;
+#else
+		Matrix result(rows_nb, other.col_nb);
+
+		// 1. Alokacja pamięci na GPU
+		double *d_A, *d_B, *d_C;
+		size_t sizeA = rows_nb * col_nb * sizeof(double);
+		size_t sizeB = other.rows_nb * other.col_nb * sizeof(double);
+		size_t sizeC = rows_nb * other.col_nb * sizeof(double);
+
+		cudaMalloc(&d_A, sizeA);
+		cudaMalloc(&d_B, sizeB);
+		cudaMalloc(&d_C, sizeC);
+
+		// 2. Kopiowanie danych CPU → GPU
+		cudaMemcpy(d_A, data.data(), sizeA, cudaMemcpyHostToDevice);
+		cudaMemcpy(d_B, other.get_data().data(), sizeB, cudaMemcpyHostToDevice);
+
+		// 3. Wywołanie cuBLAS GEMM
+		cublasHandle_t handle;
+		cublasCreate(&handle);
+	 
+		const double alpha = 1.0;
+		const double beta  = 0.0;
+
+		// Uwaga: cuBLAS używa column-major, więc trzeba transponować logikę
+		cublasDgemm(
+			handle,
+			CUBLAS_OP_N, CUBLAS_OP_N,
+			other.col_nb, rows_nb, col_nb,
+			&alpha,
+			d_B, other.col_nb,
+			d_A, col_nb,
+			&beta,
+			d_C, other.col_nb
+		);
+
+		// 4. Kopiowanie wyników GPU - CPU
+		cudaMemcpy(result.get_data_mutable().data(), d_C, sizeC, cudaMemcpyDeviceToHost);
+
+		// 5. Sprzątanie
+		cublasDestroy(handle);
+		cudaFree(d_A);
+		cudaFree(d_B);
+		cudaFree(d_C);
+
+		return result;
+#endif
 	}
 	Matrix transpose() const {
 		Matrix result(col_nb, rows_nb);

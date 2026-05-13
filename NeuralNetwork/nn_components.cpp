@@ -69,7 +69,6 @@ void Dense::update_params(double lr, size_t batch_size) {
     //Update bias
     for (size_t r = 0; r < bias.get_rows_nb(); ++r) {
         for (size_t c = 0; c < bias.get_columns_nb(); ++c) {
-            // Zak³adam, ¿e masz zmienn¹ przetrzymuj¹c¹ gradienty biasu z backpropagate!
             bias(r, c) -= factor * accumulated_bias_gradients(r, c);
         }
     }
