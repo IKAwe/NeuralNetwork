@@ -38,8 +38,10 @@ void show_architecture_settings(AppState& state) {
             ImGui::TableSetColumnIndex(1);
             ImGui::SetNextItemWidth(-FLT_MIN);
 
-            // Sprawdzamy typ po nazwie. Jeœli to "Dense" (typ 0), pokazujemy wejœcia.
-            if (state.gui_layers[i].type_index == 0) {
+            std::string current_layer_name = state.layer_names[state.gui_layers[i].type_index];
+            LayerType current_type = LayerMaker::registry.at(current_layer_name);
+
+            if (current_type == LayerType::Dense) {
                 if ((i == 0) && state.dataset.has_value()) {
                     ImGui::TextDisabled("%d (Dane)", state.gui_layers[i].inputs);
                 }
@@ -58,7 +60,7 @@ void show_architecture_settings(AppState& state) {
             // 3. WYJŒCIA (Out)
             ImGui::TableSetColumnIndex(2);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            if (state.gui_layers[i].type_index == 0) {
+            if (current_type  == LayerType::Dense) {
                 // ZMIANA: Zablokuj edycjê dla ostatniej warstwy, jeœli wymusza to dataset
                 if (i == state.gui_layers.size() - 1 && state.dataset.has_value()) {
                     ImGui::TextDisabled("%d (Cel)", state.gui_layers[i].outputs);
@@ -66,6 +68,9 @@ void show_architecture_settings(AppState& state) {
                 else {
                     ImGui::InputInt("##out", &state.gui_layers[i].outputs, 0);
                 }
+            }
+            else {
+                ImGui::Text(" - ");
             }
 
             // 4. PARAMETRY
@@ -131,7 +136,7 @@ void show_architecture_settings(AppState& state) {
 
         if (!can_train) {
             ImGui::EndDisabled();
-            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Wczytaj i przetransformuj dane, aby rozpocz¹æ trening.");
+            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Load, fit and transform data to train.s");
         }
         if (train_button && can_train) {
             if (!state.dataset) {
