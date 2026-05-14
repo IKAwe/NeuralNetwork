@@ -7,7 +7,7 @@
 #include <string>
 #include "data_structures.h"
 #include "data_preprocessor.h"
-#include "nn_components.h"
+#include "layers.h"
 #include "loss_functions.h"
 #include <functional>
 

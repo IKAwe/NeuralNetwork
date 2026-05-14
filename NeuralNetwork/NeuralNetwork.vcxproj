@@ -137,9 +137,10 @@
     <ClInclude Include="activation_functions.h" />
     <ClInclude Include="csv_loader.h" />
     <ClInclude Include="data_preprocessor.h" />
+    <ClInclude Include="json.hpp" />
     <ClInclude Include="loss_functions.h" />
     <ClInclude Include="loss_func_maker.h" />
-    <ClInclude Include="nn_components.h" />
+    <ClInclude Include="layers.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="StudentPerformanceFactors.csv" />

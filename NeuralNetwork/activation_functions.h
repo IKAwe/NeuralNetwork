@@ -1,5 +1,5 @@
 #include <cmath>
-#include "nn_components.h"
+#include "layers.h"
 
 class Sigmoid : public Layer {
 public:

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "nn_components.h"
+#include "layers.h"
 #include "activation_functions.h"
 
 enum class LayerType { Dense, ReLU, Sigmoid, Dropout };

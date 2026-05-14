@@ -3,7 +3,7 @@
 #include "CppUnitTest.h"
 #include "csv_loader.h"
 #include "data_structures.h"
-#include "nn_components.h"
+#include "layers.h"
 #include "data_preprocessor.h"
 #include "neural_network.h"
 #include "loss_functions.h"

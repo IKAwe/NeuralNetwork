@@ -1,4 +1,4 @@
-#include "nn_components.h"
+#include "layers.h"
 #include <random>
 
 Dense::Dense(size_t id, size_t in_dim, size_t out_dim)
