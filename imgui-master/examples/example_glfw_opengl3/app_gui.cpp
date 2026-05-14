@@ -56,7 +56,6 @@ void AppGUI::renderTrainTab() {
         show_architecture_settings(state);
 
         // --- Kolumna 3: Wyniki ---
-        // (Reszta pozostaje bez zmian)
         ImGui::TableSetColumnIndex(2);
         ImGui::Text("Training Process");
         ImGui::Separator();

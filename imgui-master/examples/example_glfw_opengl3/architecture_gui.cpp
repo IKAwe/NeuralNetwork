@@ -6,7 +6,7 @@
 
 void show_architecture_settings(AppState& state) {
 
-    // Rysowanie dynamicznej tabeli warstw (zastêpuje stary kod)
+    // Rysowanie dynamicznej tabeli warstw
     if (ImGui::BeginTable("LayersTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         ImGui::TableSetupColumn("Type");
         ImGui::TableSetupColumn("In", ImGuiTableColumnFlags_WidthFixed, 40.0f);
@@ -14,71 +14,82 @@ void show_architecture_settings(AppState& state) {
         ImGui::TableSetupColumn("Params");
         ImGui::TableHeadersRow();
 
+        // Look for the last configurable layer to set the out size of the table properly
+        int last_configurable_idx = -1;
+        for (int j = 0; j < (int)state.gui_layers.size(); ++j) {
+            std::string l_name = state.layer_names[state.gui_layers[j].type_index];
+            if (LayerMaker::registry.at(l_name) == LayerType::Dense) { // When implemented more layer types add here
+                last_configurable_idx = j;
+            }
+        }
+
+        //Set inputs and outputs for each layer based on the dataset and the previous layer configuration.
+        // This is done before drawing the table to ensure that the values are correct when displayed. 
+        for (size_t i = 0; i < state.gui_layers.size(); ++i) {
+            std::string current_layer_name = state.layer_names[state.gui_layers[i].type_index];
+            LayerType current_type = LayerMaker::registry.at(current_layer_name);
+
+            if (i == 0) {
+                if (state.dataset.has_value() && state.dataset->input_data.get_columns_nb() > 0) {
+                    state.gui_layers[i].inputs = (int)state.dataset->input_data.get_columns_nb();
+                }
+            }
+            else {
+                state.gui_layers[i].inputs = state.gui_layers[i - 1].outputs;
+            }
+            if (current_type != LayerType::Dense) {
+                state.gui_layers[i].outputs = state.gui_layers[i].inputs;
+            }
+            else if (static_cast<int>(i) == last_configurable_idx && state.dataset.has_value() && state.dataset->output_data.get_columns_nb() > 0) {
+                state.gui_layers[i].outputs = (int)state.dataset->output_data.get_columns_nb();
+            }
+        }
+
+        //Draw table rows
         for (size_t i = 0; i < state.gui_layers.size(); ++i) {
             ImGui::PushID(static_cast<int>(i));
             ImGui::TableNextRow();
 
-            // Automatyczne spinanie wejœæ z wyjœciem poprzedniej warstwy
-            if (i == 0) {
-                state.gui_layers[i].inputs = state.dataset ? (int)state.dataset->input_data.get_columns_nb() : 0;
-            }
-            else if (i > 0) {
-                state.gui_layers[i].inputs = state.gui_layers[i - 1].outputs;
-                if (i == state.gui_layers.size() - 1) {
-                    state.gui_layers[i].outputs = state.dataset ? (int)state.dataset->output_data.get_columns_nb() : 0;
-                }
-            }
+            std::string current_layer_name = state.layer_names[state.gui_layers[i].type_index];
+            LayerType current_type = LayerMaker::registry.at(current_layer_name);
 
             // 1. TYP WARSTWY
             ImGui::TableSetColumnIndex(0);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            // Pobieramy nazwy z naszej Fabryki
             ImGui::Combo("##type", &state.gui_layers[i].type_index, state.layer_names.data(), (int)state.layer_names.size());
 
             // 2. WEJŒCIA (In)
             ImGui::TableSetColumnIndex(1);
             ImGui::SetNextItemWidth(-FLT_MIN);
-
-            std::string current_layer_name = state.layer_names[state.gui_layers[i].type_index];
-            LayerType current_type = LayerMaker::registry.at(current_layer_name);
-
-            if (current_type == LayerType::Dense) {
-                if ((i == 0) && state.dataset.has_value()) {
-                    ImGui::TextDisabled("%d (Dane)", state.gui_layers[i].inputs);
-                }
-                else if (i == 0) {
-                    ImGui::InputInt("##in", &state.gui_layers[i].inputs, 0);
-                }
-                else {
-                    ImGui::TextDisabled("%d (Auto)", state.gui_layers[i].inputs); 
-                }
+            if (current_type == LayerType::Dense && i == 0 && !state.dataset.has_value()) {
+                ImGui::InputInt("##in", &state.gui_layers[i].inputs, 0);
+            }
+            else if (i == 0 && state.dataset.has_value()) {
+                ImGui::TextDisabled("%d", state.gui_layers[i].inputs);
             }
             else {
-                ImGui::Text(" - ");
-                state.gui_layers[i].outputs = state.gui_layers[i].inputs; // Aktywacje przepuszczaj¹ rozmiar
+                ImGui::TextDisabled("%d", state.gui_layers[i].inputs);
             }
 
             // 3. WYJŒCIA (Out)
             ImGui::TableSetColumnIndex(2);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            if (current_type  == LayerType::Dense) {
-                // ZMIANA: Zablokuj edycjê dla ostatniej warstwy, jeœli wymusza to dataset
-                if (i == state.gui_layers.size() - 1 && state.dataset.has_value()) {
-                    ImGui::TextDisabled("%d (Cel)", state.gui_layers[i].outputs);
+            if (current_type == LayerType::Dense) {
+                if (static_cast<int>(i) == last_configurable_idx && state.dataset.has_value()) {
+                    ImGui::TextDisabled("%d", state.gui_layers[i].outputs);
                 }
                 else {
                     ImGui::InputInt("##out", &state.gui_layers[i].outputs, 0);
                 }
             }
             else {
-                ImGui::Text(" - ");
+                ImGui::TextDisabled("%d", state.gui_layers[i].outputs);
             }
 
             // 4. PARAMETRY
             ImGui::TableSetColumnIndex(3);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            // Indeks 3 w naszym systemie to "Dropout"
-            if (state.gui_layers[i].type_index == 3) {
+            if (current_layer_name == "Dropout") {
                 ImGui::SliderFloat("Rate", &state.gui_layers[i].dropout_rate, 0.0f, 1.0f, "%.2f");
             }
             else {
