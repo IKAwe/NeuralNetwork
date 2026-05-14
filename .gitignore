@@ -362,3 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /NeuralNetwork/main.cpp
+/imgui-master/examples/example_glfw_opengl3/preprocessor_config.json

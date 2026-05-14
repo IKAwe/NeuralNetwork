@@ -16,16 +16,25 @@ struct AppState {
     int selected_file_idx = 0;
     //Datapreprocessing
     DataPreprocessor preprocessor;
+
+    char preprocessor_filepath[128] = "preprocessor_config.json";
+    std::string preprocessor_status_msg = "";
+
     std::atomic<bool> is_fitting = false;
     bool is_fitted = false;
     StringMatrix raw_data;
     std::atomic<bool> is_transforming = false;
     std::optional<Dataset> dataset;
+
     //Architecture
     std::vector<LayerUI> gui_layers;
     std::vector<const char*> layer_names = LayerMaker::get_available_names();
     // --- Stan dla zak³adki TRAIN ---
     NeuralNetwork nn;
+
+    char nn_filepath[128] = "neural_network.bin";
+    std::string nn_status_msg = "";
+
     Hyperparams hyperparams = Hyperparams(100, 32, 0.5f);
     std::vector<const char*> loss_names = LossFuncMaker::get_available_names();
     int selected_loss_idx = 0;
