@@ -90,39 +90,58 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
             ", Expected: " + std::to_string(layers.back()->get_output_nb())
         );
 	}
+    //Preallocation for batching
+    Matrix batch_inputs(params.batch_size, inputs.get_columns_nb());
+    Matrix batch_targets(params.batch_size, targets.get_columns_nb());
 
     for (size_t epoch = 0; epoch < params.epochs; ++epoch) {
 
-        std::vector<Matrix> layer_inputs;
-        layer_inputs.push_back(inputs); 
+		double accumulated_loss = 0.0;
+		int batch_count = 0;
 
-        Matrix current_data = inputs;
-        for (const auto& layer : layers) {
-            current_data = layer->feedforward(current_data);
-            layer_inputs.push_back(current_data);
+        for (size_t start_idx = 0; start_idx < total_samples; start_idx += params.batch_size) {
+
+            size_t end_idx = std::min(start_idx + params.batch_size, total_samples);
+            size_t current_batch_size = end_idx - start_idx;
+
+            batch_inputs.overwrite_with_rows(inputs, start_idx, end_idx);
+            batch_targets.overwrite_with_rows(targets, start_idx, end_idx);
+
+            // --- 1. FORWARD PASS ---
+            std::vector<Matrix> layer_inputs;
+            layer_inputs.push_back(batch_inputs);
+
+            Matrix current_data = batch_inputs;
+            for (const auto& layer : layers) {
+                current_data = layer->feedforward(current_data);
+                layer_inputs.push_back(current_data);
+            }
+            Matrix predictions = current_data;
+
+            accumulated_loss += loss_function->calculate(predictions, batch_targets);
+            batch_count++;
+
+            // --- 2. BACKWARD PASS ---
+            Matrix current_gradient = loss_function->calculate_gradient(predictions, batch_targets);
+
+            for (int l = (int)layers.size() - 1; l >= 0; --l) {
+                current_gradient = layers[l]->backpropagate(layer_inputs[l], current_gradient);
+            }
+
+            // --- 3. WEIGTH UPDATE ---
+            for (auto& layer : layers) {
+                layer->update_params(params.learning_rate, current_batch_size);
+            }
         }
-
-        Matrix predictions = current_data;
+        double epoch_loss = accumulated_loss / batch_count;
 
         size_t print_interval = (params.epochs >= 10) ? (params.epochs / 10) : 1;
         if (epoch % print_interval == 0 || epoch == params.epochs - 1) {
-            double current_loss = loss_function->calculate(predictions, targets);
-            std::cout << "Epoch [" << epoch << "/" << params.epochs << "] - Loss: " << current_loss << std::endl;
-        }
-
-        Matrix current_gradient = loss_function->calculate_gradient(predictions, targets);
-
-        for (int l = layers.size() - 1; l >= 0; --l) {
-            current_gradient = layers[l]->backpropagate(layer_inputs[l], current_gradient);
-        }
-
-        for (auto& layer : layers) {
-            layer->update_params(params.learning_rate, total_samples);
+            std::cout << "Epoch [" << epoch + 1 << "/" << params.epochs << "] - Loss: " << epoch_loss << std::endl;
         }
 		//Send epoch stats to callback
         if (on_epoch_end) {
-            double epoch_loss = loss_function->calculate(predict(inputs), targets);
-            on_epoch_end(EpochStats(epoch, epoch_loss));
+            on_epoch_end(EpochStats(epoch+1, epoch_loss));
 		}
     }
 }

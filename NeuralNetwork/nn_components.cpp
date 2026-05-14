@@ -58,21 +58,10 @@ Matrix Dense::backpropagate(const Matrix& inputs, const Matrix& gradients_from_n
 }
 
 void Dense::update_params(double lr, size_t batch_size) {
-    double factor= lr/static_cast<double>(batch_size);
 
     // Update weigths: W = W -(lr/batch_size)* dW
-    for (size_t r = 0; r < weights.get_rows_nb(); ++r) {
-        for (size_t c = 0; c < weights.get_columns_nb(); ++c) {
-            weights(r, c) -= factor * accumulated_gradients(r, c);
-        }
-    }
-    //Update bias
-    for (size_t r = 0; r < bias.get_rows_nb(); ++r) {
-        for (size_t c = 0; c < bias.get_columns_nb(); ++c) {
-            // Zak³adam, ¿e masz zmienn¹ przetrzymuj¹c¹ gradienty biasu z backpropagate!
-            bias(r, c) -= factor * accumulated_bias_gradients(r, c);
-        }
-    }
+    weights = weights - (accumulated_gradients * lr);
+    bias = bias - (accumulated_bias_gradients * lr);
     // Zero the gradients after a batch
     zero_gradients();
 }

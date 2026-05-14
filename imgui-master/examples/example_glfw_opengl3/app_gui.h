@@ -26,7 +26,7 @@ struct AppState {
     std::vector<const char*> layer_names = LayerMaker::get_available_names();
     // --- Stan dla zak³adki TRAIN ---
     NeuralNetwork nn;
-    Hyperparams hyperparams = Hyperparams(10, 32, 0.01f);
+    Hyperparams hyperparams = Hyperparams(100, 32, 0.5f);
     std::vector<const char*> loss_names = LossFuncMaker::get_available_names();
     int selected_loss_idx = 0;
     std::atomic<bool> is_training = false;

@@ -12,7 +12,7 @@ public:
     virtual double calculate(const Matrix& predictions, const Matrix& targets) = 0;
     virtual Matrix calculate_gradient(const Matrix& predictions, const Matrix& targets) = 0;
 };
-
+//MSE already divides by n, so we don't need to do it in the training loop
 class MSE : public Loss {
 public:
     double calculate(const Matrix& predictions, const Matrix& targets) override {

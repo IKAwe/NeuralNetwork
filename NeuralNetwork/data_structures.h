@@ -108,6 +108,34 @@ public:
 		}
 		return result;
 	}
+
+	Matrix operator*(const double scalar) const {
+		Matrix result(rows_nb, col_nb);
+		for (size_t i = 0; i < data.size(); ++i) {
+			result.data[i] = data[i] * scalar;
+		}
+		return result;
+	}
+	Matrix operator-(const Matrix& other) const {
+		if (rows_nb != other.rows_nb || col_nb != other.col_nb) {
+			throw std::runtime_error("Matrix dimensions do not match for subtraction");
+		}
+		Matrix result(rows_nb, col_nb);
+		for (size_t i = 0; i < data.size(); ++i) {
+			result.data[i] = data[i] - other.data[i];
+		}
+		return result;
+	}
+	Matrix operator+(const Matrix& other) const {
+		if (rows_nb != other.rows_nb || col_nb != other.col_nb) {
+			throw std::runtime_error("Matrix dimensions do not match for addition");
+		}
+		Matrix result(rows_nb, col_nb);
+		for (size_t i = 0; i < data.size(); ++i) {
+			result.data[i] = data[i] + other.data[i];
+		}
+		return result;
+	}
 	Matrix transpose() const {
 		Matrix result(col_nb, rows_nb);
 		for (size_t r = 0; r < rows_nb; ++r) {
@@ -157,6 +185,20 @@ public:
 	}
 	 std::vector<double>& get_data_mutable() {
 		 return data;
+	 }
+
+	 void overwrite_with_rows(const Matrix& source, size_t start_row, size_t end_row) {
+
+		 size_t new_rows = end_row - start_row;
+
+		 this->rows_nb = new_rows;
+		 this->col_nb = source.get_columns_nb();
+		 this->data.resize(new_rows * this->col_nb);
+
+		 std::copy(source.data.begin() + (start_row * source.get_columns_nb()),
+					source.data.begin() + (end_row * source.get_columns_nb()),
+					this->data.begin());
+
 	 }
 
 	size_t get_rows_nb() const { return rows_nb; }

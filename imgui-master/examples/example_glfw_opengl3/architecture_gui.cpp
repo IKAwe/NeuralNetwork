@@ -157,6 +157,11 @@ void show_architecture_settings(AppState& state) {
             state.nn.set_loss(LossFuncMaker::create_by_name(state.loss_names[state.selected_loss_idx]));
             state.is_training = true;
 
+            state.loss_history.clear();
+            state.training_logs.clear();
+            state.loss_history.reserve(state.hyperparams.epochs);
+            state.training_logs.reserve(state.hyperparams.epochs);
+
             std::thread([&state]() {
                 std::function<void(EpochStats)> on_epoch_end = [&state](EpochStats stats) {
                     std::lock_guard<std::mutex> lock(state.gui_mutex);
