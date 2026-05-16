@@ -5,8 +5,21 @@
 #include <functional>
 
 void show_architecture_settings(AppState& state) {
+    // Show reset button and disable architecture configuration when loaded model
+    if (state.is_architecture_locked) {
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Model loaded. Architecture is locked.");
+        if (ImGui::Button("RESET ARCHITECTURE", ImVec2(-FLT_MIN, 30))) {
+            state.is_architecture_locked = false;
+            //state.nn.clear_layers();
+            state.loss_history.clear();
+            state.training_logs.clear();
+        }
+        ImGui::Spacing();
+    }
 
-    // Rysowanie dynamicznej tabeli warstw
+    if (state.is_architecture_locked) ImGui::BeginDisabled();
+
+    // Dynamic table for layers configuration
     if (ImGui::BeginTable("LayersTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         ImGui::TableSetupColumn("Type");
         ImGui::TableSetupColumn("In", ImGuiTableColumnFlags_WidthFixed, 40.0f);
@@ -112,6 +125,8 @@ void show_architecture_settings(AppState& state) {
         }
     }
 
+    if (state.is_architecture_locked) ImGui::EndDisabled();
+
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
     // Hiperparametry
@@ -138,7 +153,7 @@ void show_architecture_settings(AppState& state) {
     
 
     else {
-        bool can_train = state.dataset.has_value();
+        bool can_train = state.dataset.has_value() && state.gui_layers.size() >0;
 
         if (!can_train) ImGui::BeginDisabled();
 
@@ -148,30 +163,37 @@ void show_architecture_settings(AppState& state) {
 
         if (!can_train) {
             ImGui::EndDisabled();
-            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Load, fit and transform data to train.s");
+            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Load, fit and transform data to train.");
         }
         if (train_button && can_train) {
             if (!state.dataset) {
                 ImGui::Text("No transformed dataset loaded!");
                 return;
             }
-            //Update layers
-            state.nn.clear_layers();
-            for (size_t i = 0; i < state.gui_layers.size(); ++i) {
-                std::string name = state.layer_names[state.gui_layers[i].type_index];
-                auto layer = LayerMaker::create_by_name(name, i, state.gui_layers[i]);
+            //Create new architecture if no loaded model
+            if (!state.is_architecture_locked)
+            {
+                state.nn.clear_layers();
+                for (size_t i = 0; i < state.gui_layers.size(); ++i) {
+                    std::string name = state.layer_names[state.gui_layers[i].type_index];
+                    auto layer = LayerMaker::create_by_name(name, i, state.gui_layers[i]);
 
-                if (layer) {
-                    state.nn.add_layer(std::move(layer));
+                    if (layer) {
+                        state.nn.add_layer(std::move(layer));
+                    }
                 }
+                //Clear logs from previous trainings only when creating new architecture
+                state.loss_history.clear();
+                state.training_logs.clear();
             }
+
+            state.is_architecture_locked = true;
+
             state.nn.set_loss(LossFuncMaker::create_by_name(state.loss_names[state.selected_loss_idx]));
             state.is_training = true;
 
-            state.loss_history.clear();
-            state.training_logs.clear();
-            state.loss_history.reserve(state.hyperparams.epochs);
-            state.training_logs.reserve(state.hyperparams.epochs);
+            state.loss_history.reserve(state.loss_history.size()+ state.hyperparams.epochs);
+            state.training_logs.reserve(state.training_logs.size() + state.hyperparams.epochs);
 
             std::thread([&state]() {
                 std::function<void(EpochStats)> on_epoch_end = [&state](EpochStats stats) {
@@ -182,6 +204,65 @@ void show_architecture_settings(AppState& state) {
                 state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
                 state.is_training = false;
                 }).detach();
+        }
+    }
+
+    //--- LOAD/SAVE MODEL ---
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+    ImGui::Text("Model save & load (.bin)");
+
+    ImGui::InputText("File Path##net", state.network_filepath, sizeof(state.network_filepath));
+
+    // save button
+    if (ImGui::Button("Save Model", ImVec2(120, 0))) {
+        try {
+            state.nn.save(state.network_filepath);
+            state.network_status_msg = "Successfully saved to: " + std::string(state.network_filepath);
+        }
+        catch (const std::exception& e) {
+            state.network_status_msg = std::string("Save error: ") + e.what();
+        }
+    }
+
+    ImGui::SameLine();
+
+    // load button
+    if (ImGui::Button("Load Model", ImVec2(120, 0))) {
+        try {
+            state.nn.load(state.network_filepath);
+            state.gui_layers.clear();
+            const auto& loaded_layers = state.nn.get_layers();
+
+            for (const auto& layer : loaded_layers) {
+                LayerUI config;
+                std::string name = layer->get_layer_name();
+
+                for (int j = 0; j < (int)state.layer_names.size(); ++j) {
+                    if (std::string(state.layer_names[j]) == name) {
+                        config.type_index = j;
+                        break;
+                    }
+                }
+
+                config.inputs = (int)layer->get_input_nb();
+                config.outputs = (int)layer->get_output_nb();
+
+                state.gui_layers.push_back(config);
+            }
+            state.is_architecture_locked = true;
+            state.network_status_msg = "Successfully loaded from: " + std::string(state.network_filepath);
+        }
+        catch (const std::exception& e) {
+            state.network_status_msg = std::string("Load error: ") + e.what();
+        }
+    }
+
+    if (!state.network_status_msg.empty()) {
+        if (state.network_status_msg.find("error") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", state.network_status_msg.c_str());
+        }
+        else {
+            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "%s", state.network_status_msg.c_str());
         }
     }
 }
