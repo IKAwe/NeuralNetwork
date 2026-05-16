@@ -200,6 +200,18 @@ public:
 					this->data.begin());
 
 	 }
+	 void save(std::ostream& out) const {
+		 out.write(reinterpret_cast<const char*>(&rows_nb), sizeof(rows_nb));
+		 out.write(reinterpret_cast<const char*>(&col_nb), sizeof(col_nb));
+		 out.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(double));
+	 }
+
+	 void load(std::istream& in) {
+		 in.read(reinterpret_cast<char*>(&rows_nb), sizeof(rows_nb));
+		 in.read(reinterpret_cast<char*>(&col_nb), sizeof(col_nb));
+		 data.resize(rows_nb * col_nb);
+		 in.read(reinterpret_cast<char*>(data.data()), data.size() * sizeof(double));
+	 }
 
 	size_t get_rows_nb() const { return rows_nb; }
 	size_t get_columns_nb() const { return col_nb; }

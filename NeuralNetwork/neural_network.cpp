@@ -1,5 +1,6 @@
 #include "neural_network.h"
 #include "loss_functions.h"
+#include "layer_maker.h"
 #include <iostream>
 /**
  * @brief Add previosly initialized layer to the model.
@@ -143,5 +144,65 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
         if (on_epoch_end) {
             on_epoch_end(EpochStats(epoch+1, epoch_loss));
 		}
+    }
+}
+
+void NeuralNetwork::save(const std::string& filename) {
+    std::ofstream out(filename, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("Could not open file for writing: " + filename);
+    }
+
+    size_t num_layers = layers.size();
+    out.write(reinterpret_cast<const char*>(&num_layers), sizeof(num_layers));
+
+    for (const auto& layer : layers) {
+        std::string name = layer->get_layer_name();
+        size_t name_length = name.size();
+        out.write(reinterpret_cast<const char*>(&name_length), sizeof(name_length));
+        out.write(name.c_str(), name_length);
+
+        size_t in_nb = layer->get_input_nb();
+        size_t out_nb = layer->get_output_nb();
+        out.write(reinterpret_cast<const char*>(&in_nb), sizeof(in_nb));
+        out.write(reinterpret_cast<const char*>(&out_nb), sizeof(out_nb));
+
+        layer->save(out);
+    }
+}
+
+void NeuralNetwork::load(const std::string& filename) {
+    std::ifstream in(filename, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Could not open file for reading: " + filename);
+    }
+
+    layers.clear();
+
+    size_t layer_nb;
+    in.read(reinterpret_cast<char*>(&layer_nb), sizeof(layer_nb));
+
+    for (size_t i = 0; i < layer_nb; ++i) {
+        size_t name_length;
+        in.read(reinterpret_cast<char*>(&name_length), sizeof(name_length));
+        std::string name(name_length, '\0');
+        in.read(&name[0], name_length);
+
+        size_t in_nb, out_nb;
+        in.read(reinterpret_cast<char*>(&in_nb), sizeof(in_nb));
+        in.read(reinterpret_cast<char*>(&out_nb), sizeof(out_nb));
+
+        LayerUI config;
+        config.inputs = (int)in_nb;
+        config.outputs = (int)out_nb;
+
+        std::unique_ptr<Layer> layer = LayerMaker::create_by_name(name, i, config);
+
+        if (!layer) {
+            throw std::runtime_error("NeuralNetwork::load - Unknown layer: " + name);
+        }
+
+        layer->load(in);
+        add_layer(std::move(layer));
     }
 }

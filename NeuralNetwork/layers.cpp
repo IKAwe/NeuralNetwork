@@ -66,32 +66,13 @@ void Dense::update_params(double lr, size_t batch_size) {
     zero_gradients();
 }
 
-bool Dense::save(std::ofstream& output_fstream) const {
-    if (!output_fstream.is_open()) return false;
 
-    // Store dimesions and then data
-    size_t rows = weights.get_rows_nb();
-    size_t cols = weights.get_columns_nb();
-
-    output_fstream.write(reinterpret_cast<const char*>(&rows), sizeof(size_t));
-    output_fstream.write(reinterpret_cast<const char*>(&cols), sizeof(size_t));
-    output_fstream.write(reinterpret_cast<const char*>(weights.get_data().data()), rows * cols * sizeof(double));
-    output_fstream.write(reinterpret_cast<const char*>(bias.get_data().data()), cols * sizeof(double));
-
-    return output_fstream.good();
+void Dense::save(std::ostream& out) const {
+    weights.save(out);
+    bias.save(out);
 }
 
-bool Dense::load(std::ifstream& input_fstream) {
-    if (!input_fstream.is_open()) return false;
-    size_t rows, cols;
-    input_fstream.read(reinterpret_cast<char*>(&rows), sizeof(size_t));
-    input_fstream.read(reinterpret_cast<char*>(&cols), sizeof(size_t));
-	// alcocate memory for weights and bias
-    weights = Matrix(rows, cols);
-    bias = Matrix(1, cols);
-
-    input_fstream.read(reinterpret_cast<char*>(weights.get_data_mutable().data()), rows * cols * sizeof(double));
-    input_fstream.read(reinterpret_cast<char*>(bias.get_data_mutable().data()), cols * sizeof(double));
-
-    return input_fstream.good();
+void Dense::load(std::istream& in) {
+    weights.load(in);
+    bias.load(in);
 }

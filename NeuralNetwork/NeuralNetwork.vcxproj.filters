@@ -36,7 +36,7 @@
     <ClCompile Include="neural_network.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="nn_components.cpp">
+    <ClCompile Include="layers.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="neural_network.h">

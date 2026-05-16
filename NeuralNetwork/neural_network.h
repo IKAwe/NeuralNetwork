@@ -48,8 +48,8 @@ public:
 	}
     double test(const Matrix& inputs, const Matrix& targets);
 
-    bool save(const std::string& filename);
-    bool load(const std::string& filename);
+    void save(const std::string& filename);
+    void load(const std::string& filename);
 };
 
 #endif

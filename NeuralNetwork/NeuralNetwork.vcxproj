@@ -131,7 +131,7 @@
     <ClCompile Include="layer_maker.h" />
     <ClCompile Include="neural_network.cpp" />
     <ClCompile Include="neural_network.h" />
-    <ClCompile Include="nn_components.cpp" />
+    <ClCompile Include="layers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="activation_functions.h" />
