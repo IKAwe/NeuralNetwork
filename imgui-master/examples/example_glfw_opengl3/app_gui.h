@@ -31,6 +31,9 @@ struct AppState {
     std::vector<const char*> layer_names = LayerMaker::get_available_names();
     // --- Stan dla zak³adki TRAIN ---
     NeuralNetwork nn;
+    char network_filepath[128] = "neural_network.bin";
+    std::string network_status_msg = "";
+    bool is_architecture_locked = false;
 
     char nn_filepath[128] = "neural_network.bin";
     std::string nn_status_msg = "";

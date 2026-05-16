@@ -50,6 +50,9 @@ public:
 
     void save(const std::string& filename);
     void load(const std::string& filename);
+
+	//For GUI when loading a model, to display the architecture
+	const std::vector<std::unique_ptr<Layer>>& get_layers() const { return layers; }
 };
 
 #endif
