@@ -7,6 +7,7 @@
 #include "data_preprocessor.h"
 #include "neural_network.h"
 #include "loss_functions.h"
+#include "layer_maker.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -26,7 +27,7 @@ namespace NeuralNetworkTest
 
             // 2. Act 
             auto matrix = load_csv(path);
-
+			std::remove(path.c_str());
             // 3. Assert 
 			// Check the dimensions of the matrix
             Assert::AreEqual(size_t(3), matrix.get_columns_nb(), L"Number of columns should be 3");
@@ -53,6 +54,8 @@ namespace NeuralNetworkTest
 
             auto matrix = load_csv(path);
 
+			std::remove(path.c_str());
+
 			Assert::IsTrue(std::string(matrix(1, 1)).empty(), L"Empty cell should be an empty string");
 			Assert::IsTrue(std::string(matrix(2, 0)).empty(), L"The padding should be added");
 			Assert::IsTrue(std::string(matrix(3, 2)).empty(), L"The padding should be added");
@@ -66,12 +69,13 @@ namespace NeuralNetworkTest
             f.close();
 
             auto matrix = load_csv(path);
-
+			std::remove(path.c_str());
             Assert::AreEqual("2", std::string(matrix(1, 1)).c_str());
         }
 
     
 	};
+
     TEST_CLASS(PreprocessingTests)
     {
     public:
@@ -337,6 +341,87 @@ namespace NeuralNetworkTest
             double result = nn.test(in, target);
 
             Assert::AreEqual(1.0, result, 0.0001, L"Loss calculation via Loss class failed!");
+        }
+    };
+
+    TEST_CLASS(ModelIOTests)
+    {
+    public:
+        TEST_METHOD(Preprocessor_SaveAndLoad_ShouldPreserveData)
+        {
+            const std::string test_file = "test_preprocessor_config.json";
+
+            DataPreprocessor p1;
+			StringMatrix dummy_data(3, 2);
+
+			dummy_data(0, 0) = "Age"; dummy_data(0, 1) = "City";
+			dummy_data(1, 0) = "20";  dummy_data(1, 1) = "A";
+			dummy_data(2, 0) = "40";  dummy_data(2, 1) = "B";
+
+            p1.initialize_from_data(dummy_data);
+            p1.fit(dummy_data);
+            p1.save(test_file);
+
+            DataPreprocessor p2;
+            p2.load(test_file);
+
+            const auto& cols1 = p1.get_columns();
+            const auto& cols2 = p2.get_columns();
+
+            Assert::AreEqual(cols1.size(), cols2.size(), L"Number of columns does not match!");
+            Assert::AreEqual(cols1[0]->name, cols2[0]->name, L"Column names have changed!");
+
+            auto* num_col = dynamic_cast<NumericalColumn*>(cols2[0].get());
+            Assert::IsNotNull(num_col, L"The first column should be Numerical!");
+            Assert::AreEqual(30.0, num_col->get_mean(), 1e-6, L"Incorrect mean after loading JSON!");
+
+            auto* cat_col = dynamic_cast<CategoricalColumn*>(cols2[1].get());
+            Assert::IsNotNull(cat_col, L"The second column should be Categorical!");
+            Assert::AreEqual(static_cast<size_t>(2), cat_col->get_categories().size(), L"Incorrect number of categories!"); 
+            
+            auto load_invalid_file = [] {
+                DataPreprocessor p3;
+                p3.load("not_existent.json");
+                };
+            Assert::ExpectException<std::runtime_error>(load_invalid_file, L"No exception thrown for missing file!");
+
+            std::remove(test_file.c_str());
+        }
+
+        TEST_METHOD(NeuralNetwork_SaveAndLoad_ShouldPreserveWeights)
+        {
+            const std::string test_file = "test_network_weights.bin";
+
+            NeuralNetwork nn1;
+            nn1.add_layer(LayerMaker::create_by_name("Dense", 0, { 0, 2, 4, 0.0f }));
+            nn1.add_layer(LayerMaker::create_by_name("ReLU", 1, { 0, 4, 4, 0.0f }));
+            nn1.add_layer(LayerMaker::create_by_name("Dense", 2, { 0, 4, 1, 0.0f }));
+            nn1.add_layer(LayerMaker::create_by_name("Sigmoid", 3, { 0, 1, 1, 0.0f }));
+
+            Matrix dummy_input(1, 2);
+            dummy_input(0, 0) = 0.5;
+            dummy_input(0, 1) = -0.5;
+
+            Matrix output1 = nn1.predict(dummy_input);
+            nn1.save(test_file);
+
+            NeuralNetwork nn2;
+            nn2.load(test_file);
+            Matrix output2 = nn2.predict(dummy_input);
+
+            Assert::AreEqual(output1.get_rows_nb(), output2.get_rows_nb(), L"Bad output rows!");
+            Assert::AreEqual(output1.get_columns_nb(), output2.get_columns_nb(), L"Bad output columns!");
+
+            // If binary dumping works perfectly, the numbers must match 100% up to the 9th decimal place
+            Assert::AreEqual(output1(0, 0), output2(0, 0), 1e-9, L"Difference in results! Weights did not load precisely.");
+
+            auto load_invalid_model = [] {
+                NeuralNetwork nn3;
+                nn3.load("non_existent_file.bin");
+                };
+            Assert::ExpectException<std::runtime_error>(load_invalid_model, L"No exception thrown for missing binary file!");
+
+            std::remove(test_file.c_str());
         }
     };
 }
