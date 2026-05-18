@@ -1,5 +1,5 @@
 #include <cmath>
-#include "nn_components.h"
+#include "layers.h"
 
 class Sigmoid : public Layer {
 public:
@@ -37,8 +37,7 @@ public:
     }
 
     void zero_gradients() override {};
-    bool save(std::ofstream& out) const override { return true; }
-    bool load(std::ifstream& in) override { return true; }
+    std::string get_layer_name() const override { return "Sigmoid"; };
 
 
 };
@@ -68,6 +67,5 @@ class ReLU : public Layer {
     }
     
 	void zero_gradients() override {};
-    bool save(std::ofstream& out) const override { return true; }
-	bool load(std::ifstream& in) override { return true; }
+	std::string get_layer_name() const override { return "ReLU"; }
 };

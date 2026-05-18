@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string_view>
 
-std::vector<std::string> find_csv_files(const std::string& folder)
+std::vector<std::string> find_files_by_extension(const std::string& extension, const std::string& folder)
 {
     std::vector<std::string> files;
 
@@ -12,7 +12,7 @@ std::vector<std::string> find_csv_files(const std::string& folder)
         if (entry.is_regular_file())
         {
             auto path = entry.path();
-            if (path.extension() == ".csv")
+            if (path.extension() == extension)
                 files.push_back(path.string());
         }
     }

@@ -8,6 +8,9 @@
       <UniqueIdentifier>{f18ab499-84e1-499f-8eff-9754361e0e52}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="sources\Headers">
+      <UniqueIdentifier>{654a94d7-0d86-47fe-a7db-2fcadc07bbb3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -28,12 +31,6 @@
     <ClCompile Include="..\..\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\backends\imgui_impl_glfw.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\backends\imgui_impl_opengl3.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="app_gui.cpp">
       <Filter>sources</Filter>
     </ClCompile>
@@ -41,6 +38,15 @@
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="architecture_gui.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\backends\imgui_impl_glfw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\backends\imgui_impl_opengl3.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="predict_GUI.cpp">
       <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>
@@ -55,20 +61,25 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\backends\imgui_impl_glfw.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\backends\imgui_impl_opengl3.h">
-      <Filter>sources</Filter>
+      <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\backends\imgui_impl_opengl3_loader.h">
-      <Filter>sources</Filter>
+      <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="app_gui.h" />
-    <ClInclude Include="preprocessor_gui.h">
-      <Filter>sources</Filter>
+    <ClInclude Include="..\..\backends\imgui_impl_opengl3.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="app_gui.h">
+      <Filter>sources\Headers</Filter>
     </ClInclude>
     <ClInclude Include="architecture_gui.h">
-      <Filter>sources</Filter>
+      <Filter>sources\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="preprocessor_gui.h">
+      <Filter>sources\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="predict_GUI.h">
+      <Filter>sources\Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -157,5 +157,50 @@ void show_preprocessor_settings(AppState& state) {
             }
         }
     }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Text("Preprocessor Configuration (JSON)");
+
+    // Text input for file path for saving/loading preprocessor.
+    ImGui::InputText("File Path##prep", state.preprocessor_filepath, sizeof(state.preprocessor_filepath));
+
+    // Przycisk ZAPISZ
+    if (state.is_fitted)
+    {
+        if (ImGui::Button("Save Config")) {
+            try {
+                state.preprocessor.save(state.preprocessor_filepath);
+                state.preprocessor_status_msg = "Successfully saved to: " + std::string(state.preprocessor_filepath);
+            }
+            catch (const std::exception& e) {
+                state.preprocessor_status_msg = std::string("Save error: ") + e.what();
+            }
+        }
+    }
+
+    ImGui::SameLine();
+
+    // Przycisk WCZYTAJ
+    if (ImGui::Button("Load Config")) {
+        try {
+            state.preprocessor.load(state.preprocessor_filepath);
+            state.preprocessor_status_msg = "Successfully loaded from: " + std::string(state.preprocessor_filepath);
+            state.is_fitted = true;
+        }
+        catch (const std::exception& e) {
+            state.preprocessor_status_msg = std::string("Load error: ") + e.what();
+        }
+    }
+
+    //Show status
+    if (!state.preprocessor_status_msg.empty()) {
+        if (state.preprocessor_status_msg.find("error") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", state.preprocessor_status_msg.c_str());
+        }
+        else {
+            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "%s", state.preprocessor_status_msg.c_str());
+        }
+    }
 }
 

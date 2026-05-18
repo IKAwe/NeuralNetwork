@@ -3,6 +3,10 @@
 #include <vector>
 #include <memory>
 #include "data_structures.h"
+#include "json.hpp"
+
+using json = nlohmann::json;
+
 class Column {
 public:
 	std::string name;
@@ -11,9 +15,23 @@ public:
 
 	virtual void fit(const StringMatrix& data)=0;
 	virtual double transform(const std::string_view cell)=0;
+
 	//Maybe add fit_and_transform functions that do both operations in one pass through the data, for efficiency.
-	virtual void save(std::ostream& out) const = 0;
-	virtual void load(std::istream& in) = 0;
+	virtual json serialize() const {
+		json j;
+		j["index"] = index;
+		j["name"] = name;
+		j["include_column"] = include_column;
+		j["is_target_column"] = is_target_column;
+		return j;
+	};
+	virtual void deserialize(const json& j) {
+		index = j.at("index").get<size_t>();
+		name = j.at("name").get<std::string>();
+		include_column = j.at("include_column").get<bool>();
+		is_target_column = j.at("is_target_column").get<bool>();
+	};
+
 	virtual ~Column() = default;
 protected:
 	size_t index;
@@ -31,8 +49,8 @@ public:
 
 	void fit(const StringMatrix & data) override;
 	double transform(const std::string_view cell) override;
-	void save(std::ostream& out) const override;
-	void load(std::istream& in) override;
+	json serialize() const override;
+	void deserialize(const json& j) override;
 	NumericalColumn(size_t idx, std::string name) : Column(idx, std::move(name)) {};
 };
 class CategoricalColumn : public Column {
@@ -40,8 +58,8 @@ class CategoricalColumn : public Column {
 public:
 	void fit(const StringMatrix& data) override;
 	double transform(const std::string_view cell) override;
-	void save(std::ostream& out) const override;
-	void load(std::istream& in) override;
+	json serialize() const override;
+	void deserialize(const json& j) override;
 	const std::vector<std::string>& get_categories() const { return categories; };
 	CategoricalColumn(size_t idx, std::string name) : Column(idx, std::move(name)) {};
 };

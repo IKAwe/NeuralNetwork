@@ -23,8 +23,11 @@ public:
     virtual void update_params(double lr, size_t batch_size) = 0;
 
     virtual void zero_gradients()=0;
-    virtual bool save(std::ofstream& out) const = 0;
-    virtual bool load(std::ifstream& in) = 0;
+
+    // Storing/loading
+    virtual std::string get_layer_name() const = 0;
+    virtual void save(std::ostream& out) const {};
+    virtual void load(std::istream& in) {};
 
     size_t get_id() const { return layer_id; }
 
@@ -45,8 +48,9 @@ public:
     Matrix backpropagate(const Matrix& inputs, const Matrix& gradients_from_next_layer) override;
     bool initialize() override;
     void update_params(double lr, size_t batch_size) override;
-    bool save(std::ofstream& out) const override;
-    bool load(std::ifstream& in) override;
+	std::string get_layer_name() const override { return "Dense"; }
+    void save(std::ostream& out) const override;
+    void load(std::istream& in) override;
 
     void zero_gradients() override {accumulated_gradients.zero(); accumulated_bias_gradients.zero(); } ;
 
