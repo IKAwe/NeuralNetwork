@@ -15,6 +15,7 @@ public:
 
 	virtual void fit(const StringMatrix& data)=0;
 	virtual double transform(const std::string_view cell)=0;
+	virtual std::string inverse_transform(const double value) const = 0;
 
 	//Maybe add fit_and_transform functions that do both operations in one pass through the data, for efficiency.
 	virtual json serialize() const {
@@ -49,6 +50,7 @@ public:
 
 	void fit(const StringMatrix & data) override;
 	double transform(const std::string_view cell) override;
+	std::string inverse_transform(const double value) const override;
 	json serialize() const override;
 	void deserialize(const json& j) override;
 	NumericalColumn(size_t idx, std::string name) : Column(idx, std::move(name)) {};
@@ -58,6 +60,7 @@ class CategoricalColumn : public Column {
 public:
 	void fit(const StringMatrix& data) override;
 	double transform(const std::string_view cell) override;
+	std::string inverse_transform(const double value) const override;
 	json serialize() const override;
 	void deserialize(const json& j) override;
 	const std::vector<std::string>& get_categories() const { return categories; };
@@ -104,6 +107,10 @@ public:
 	 * @param data The data to be transformed. Can be the same data that was used in fit() or new data with the same structure (same columns in the same order).
 	 */
 	Dataset transform(const StringMatrix& data);
+
+	//For prediction interpretation
+	std::vector<std::string> get_target_cols_names() const;
+	std::vector<std::string> inverse_transform_prediction(const Matrix& prediction_row) const;
 	/**
 	 * @brief Save the preprocessor state to a file. More precisely "columns" vector is saved - hence for numerical columns, mean and std_dev are saved, 
 	 and for categorical columns, the list of categories is saved. This allows the preprocessor to be reloaded later and used to transform 

@@ -58,6 +58,11 @@ double NumericalColumn::transform(const std::string_view cell) {
     return (val - mean) / std_dev;
 }
 
+std::string NumericalColumn::inverse_transform(const double val) const {
+    double original = (val * std_dev) + mean;
+    return std::to_string(original);
+}
+
 json NumericalColumn::serialize() const {
     json j = Column::serialize();
 	j["type"] = "Numerical";
@@ -111,6 +116,15 @@ double CategoricalColumn::transform(const std::string_view cell) {
 
     return -1.0;
 }
+
+std::string CategoricalColumn::inverse_transform(double val) const {
+    int idx = static_cast<int>(std::round(val));
+    if (idx >= 0 && idx < categories.size()) {
+        return categories[idx];
+    }
+    return "UNKNOWN_CATEGORY";
+}
+
 json CategoricalColumn::serialize() const {
     json j = Column::serialize();
 	j["type"] = "Categorical";
@@ -206,6 +220,37 @@ Dataset DataPreprocessor::transform(const StringMatrix& data) {
         }
     }
     return ds;
+}
+
+std::vector<std::string> DataPreprocessor::get_target_cols_names() const {
+    std::vector<std::string> names;
+    names.reserve(columns.size());
+
+    for (const auto& col : columns) {
+        if (col->include_column && col->is_target_column) {
+            names.push_back(col->name);
+        }
+    }
+    return names;
+}
+
+std::vector<std::string> DataPreprocessor::inverse_transform_prediction(const Matrix& prediction_row) const {
+    std::vector<std::string> results;
+    results.reserve(prediction_row.get_columns_nb());
+
+    int pred_col_idx = 0;
+
+    for (size_t i = 0; i < columns.size(); ++i) {
+        auto& col = columns[i];
+
+        if (col->include_column && col->is_target_column) {
+            if (pred_col_idx < prediction_row.get_columns_nb()) {//maybe delete the condition
+                results.push_back(col->inverse_transform(prediction_row(0, pred_col_idx)));
+                pred_col_idx++;
+            }
+        }
+    }
+    return results;
 }
 
 void DataPreprocessor::save(const std::string& filename) const {
