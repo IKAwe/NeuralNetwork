@@ -105,6 +105,14 @@ public:
 		if (col_nb != other.rows_nb) {
 			throw std::runtime_error("Matrix dimensions do not match for multiplication");
 		}
+		const double* A = data.data();
+		const double* B = other.data.data();
+		double* C = result.data.data();
+
+		int r_nb = (int)rows_nb;
+		int c_nb = (int)col_nb;
+		int other_c_nb = (int)other.col_nb;
+
 		Matrix result(rows_nb, other.col_nb);
 		const double* A = data.data();
 		const double* B = other.data.data();
