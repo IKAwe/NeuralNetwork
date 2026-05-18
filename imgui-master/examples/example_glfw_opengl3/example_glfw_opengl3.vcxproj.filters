@@ -46,6 +46,9 @@
     <ClCompile Include="..\..\backends\imgui_impl_opengl3.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="predict_GUI.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imconfig.h">
@@ -73,6 +76,9 @@
       <Filter>sources\Headers</Filter>
     </ClInclude>
     <ClInclude Include="preprocessor_gui.h">
+      <Filter>sources\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="predict_GUI.h">
       <Filter>sources\Headers</Filter>
     </ClInclude>
   </ItemGroup>

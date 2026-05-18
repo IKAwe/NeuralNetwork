@@ -13,7 +13,7 @@
 struct AppState {
     //Choosing a file
     std::vector<std::string> csv_files;
-    int selected_file_idx = 0;
+    int selected_file_idx = 0; //Change to -1
     //Datapreprocessing
     DataPreprocessor preprocessor;
 
@@ -48,9 +48,16 @@ struct AppState {
     std::mutex gui_mutex; // Do synchronizacji dostêpu do loss_history i training_logs
 
     // --- Stan dla zak³adki PREDICT ---
-    char output_filename[128] = "predictions.csv";
-    std::string selected_model = "Brak modelu";
-    std::string selected_data_predict = "Brak danych";
+    std::vector<std::string> bin_files;
+    std::vector<std::string> json_files;
+    //csv_files is already defined
+
+    int selected_model_idx = -1;
+    int selected_json_idx = -1;
+    int selected_csv_idx = -1;
+
+    char output_filename[256] = "predictions.csv";
+    std::string predict_status_msg = "";
 
 };
 
