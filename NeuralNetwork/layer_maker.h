@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "nn_components.h"
+#include "layers.h"
+#include "activation_functions.h"
 
 enum class LayerType { Dense, ReLU, Sigmoid, Dropout };
 
@@ -20,8 +21,8 @@ class LayerMaker {
 public:
     static inline std::map<std::string, LayerType> registry = {
         {"Dense", LayerType::Dense},
-        //{"ReLU", LayerType::ReLU},
-        //{"Sigmoid", LayerType::Sigmoid},
+       {"ReLU", LayerType::ReLU},
+        {"Sigmoid", LayerType::Sigmoid},
         //{"Dropout", LayerType::Dropout}
     };
 
@@ -38,8 +39,8 @@ public:
         LayerType type = registry.at(name);
         switch (type) {
         case LayerType::Dense:   return std::make_unique<Dense>(id, config.inputs, config.outputs);
-        //case LayerType::ReLU:    return std::make_unique<ReLU>(id, in);
-        //case LayerType::Sigmoid: return std::make_unique<Sigmoid>(id, in);
+        case LayerType::ReLU:    return std::make_unique<ReLU>(id, config.inputs);
+        case LayerType::Sigmoid: return std::make_unique<Sigmoid>(id, config.inputs);
         //case LayerType::Dropout: return std::make_unique<Dropout>(id, in, rate);
         default: return nullptr;
         }

@@ -171,6 +171,7 @@
     <ClCompile Include="app_gui.cpp" />
     <ClCompile Include="architecture_gui.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="predict_GUI.cpp" />
     <ClCompile Include="preprocessor_gui.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -182,6 +183,7 @@
     <ClInclude Include="..\..\backends\imgui_impl_opengl3_loader.h" />
     <ClInclude Include="app_gui.h" />
     <ClInclude Include="architecture_gui.h" />
+    <ClInclude Include="predict_GUI.h" />
     <ClInclude Include="preprocessor_gui.h" />
   </ItemGroup>
   <ItemGroup>

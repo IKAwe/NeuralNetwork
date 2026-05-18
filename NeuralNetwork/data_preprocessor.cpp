@@ -58,12 +58,17 @@ double NumericalColumn::transform(const std::string_view cell) {
     return (val - mean) / std_dev;
 }
 
-void NumericalColumn::save(std::ostream& out) const {
-    out << "0 " << name << " " << index << " "
-        << is_target_column << " " << mean << " " << std_dev << "\n";
+json NumericalColumn::serialize() const {
+    json j = Column::serialize();
+	j["type"] = "Numerical";
+    j["mean"] = mean;
+    j["std_dev"] = std_dev;
+    return j;
 }
-void NumericalColumn::load(std::istream& in){
-    in >> is_target_column >> mean >> std_dev;
+void NumericalColumn::deserialize(const json& j){
+    Column::deserialize(j);
+    mean = j.at("mean").get<double>();
+    std_dev = j.at("std_dev").get<double>();
 }
 
 // --- CategoricalColumn Implementation ---
@@ -106,26 +111,17 @@ double CategoricalColumn::transform(const std::string_view cell) {
 
     return -1.0;
 }
-void CategoricalColumn::save(std::ostream& out) const {
-    out << "1 " << name << " " << index << " "
-        << is_target_column << " " << categories.size();
-    for (const auto& c : categories) {
-        out << " " << c;
-        out << "\n";
-    }
+json CategoricalColumn::serialize() const {
+    json j = Column::serialize();
+	j["type"] = "Categorical";
+    j["categories"] = categories;
+    return j;
 }
-void CategoricalColumn::load(std::istream& in) {
-    size_t cat_count;
-    in >> is_target_column >> cat_count;
+void CategoricalColumn::deserialize(const json& j) {
+    Column::deserialize(j);
+    categories = j.at("categories").get<std::vector<std::string>>();
+}
 
-    categories.clear();
-    categories.reserve(cat_count);
-    for (size_t i = 0; i < cat_count; ++i) {
-        std::string cat_name;
-        in >> cat_name;
-        categories.push_back(cat_name);
-    }
-}
 
 // --- DataPreprocessor Implementation ---
 void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
@@ -213,41 +209,48 @@ Dataset DataPreprocessor::transform(const StringMatrix& data) {
 }
 
 void DataPreprocessor::save(const std::string& filename) const {
-    std::ofstream file(filename);
-    if (!file) return;
+    json j;
+    j["columns"] = json::array();
 
-    file << columns.size() << "\n";
     for (const auto& col : columns) {
-        col->save(file);
+        j["columns"].push_back(col->serialize());
     }
+
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("DataPreprocessor::save - Cannot open file: " + filename);
+    }
+    file << j.dump(4);
 }
 
 void DataPreprocessor::load(const std::string& filename) {
     std::ifstream file(filename);
-    if (!file) return;
+    if (!file.is_open()) {
+        throw std::runtime_error("DataPreprocessor::load - Cannot open file: " + filename);
+    }
+
+    json j;
+    file >> j;
 
     columns.clear();
-    size_t col_count;
-    file >> col_count;
 
-    for (size_t i = 0; i < col_count; ++i) {
-        int type;
-        std::string name;
-        size_t index;
-
-        if (!(file >> type >> name >> index)) break;
+    for (const auto& col_json : j.at("columns")) {
+        std::string type = col_json.at("type").get<std::string>();
+        size_t idx = col_json.at("index").get<size_t>();
+        std::string name = col_json.at("name").get<std::string>();
 
         std::unique_ptr<Column> col;
-
-        if (type == 0) {
-            col = std::make_unique<NumericalColumn>(index, name);
+        if (type == "Numerical") {
+            col = std::make_unique<NumericalColumn>(idx, name);
+        }
+        else if (type == "Categorical") {
+            col = std::make_unique<CategoricalColumn>(idx, name);
         }
         else {
-            col = std::make_unique<CategoricalColumn>(index, name);
+            throw std::runtime_error("DataPreprocessor::load - Unknown column type!");
         }
 
-        col->load(file);
-
+        col->deserialize(col_json);
         columns.push_back(std::move(col));
     }
 }
