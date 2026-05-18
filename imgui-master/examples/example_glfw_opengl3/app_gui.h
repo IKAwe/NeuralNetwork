@@ -13,7 +13,8 @@
 struct AppState {
     //Choosing a file
     std::vector<std::string> csv_files;
-    int selected_file_idx = 0; //Change to -1
+    bool is_loading_csv = false;
+    int selected_file_idx = -1; //Change to -1
     //Datapreprocessing
     DataPreprocessor preprocessor;
 

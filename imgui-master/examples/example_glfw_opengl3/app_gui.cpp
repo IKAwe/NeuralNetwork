@@ -20,14 +20,23 @@ void AppGUI::renderTrainTab() {
 
         //Add refresh button to not look for files every iteration of render
         // ---Dropdown do wyboru pliku CSV-------
-        if (state.csv_files.empty()) {
+        if (state.csv_files.empty() && state.selected_file_idx == -1) {
             state.csv_files = find_files_by_extension(".csv");
+            if (!state.csv_files.empty()) {
+                state.selected_file_idx = 0; //Default is first file
+            }
+        }
+        if (ImGui::Button("Refresh")) {
+            state.csv_files = find_files_by_extension(".csv");
+            state.selected_file_idx = state.csv_files.empty() ? -1 : 0;
         }
 
-        // Etykieta aktualnie wybranego pliku
-        const char* preview_value = state.csv_files.empty() ? "No files found" : state.csv_files[state.selected_file_idx].c_str();
+        ImGui::SameLine();
 
-        if (ImGui::BeginCombo("Select CSV", preview_value)) {
+        const char* preview_value = (state.selected_file_idx >= 0 && state.selected_file_idx < state.csv_files.size())
+            ? state.csv_files[state.selected_file_idx].c_str() : "No CSV files found...";
+
+        if (ImGui::BeginCombo("##csv_combo", preview_value)) {
             for (int n = 0; n < state.csv_files.size(); n++) {
                 const bool is_selected = (state.selected_file_idx == n);
                 if (ImGui::Selectable(state.csv_files[n].c_str(), is_selected)) {
@@ -41,11 +50,35 @@ void AppGUI::renderTrainTab() {
             ImGui::EndCombo();
         }
 
-        if (ImGui::Button("Load & initialize preprocessor", ImVec2(-FLT_MIN, 30))) {
-            if (!state.csv_files.empty()) {
-                state.raw_data = load_csv(state.csv_files[state.selected_file_idx]);
-                state.preprocessor.initialize_from_data(state.raw_data);
-                state.is_fitted = false;
+        ImGui::Separator();
+        if (state.is_loading_csv) {
+            ImGui::BeginDisabled();
+            ImGui::Button("LOADING CSV... PLEASE WAIT", ImVec2(-FLT_MIN, 30));
+            ImGui::EndDisabled();
+        }
+        else if (ImGui::Button("Load & initialize preprocessor", ImVec2(-FLT_MIN, 30))) {
+            if(!state.csv_files.empty() && state.selected_file_idx >= 0) {
+
+                state.is_loading_csv = true; // Block button
+                std::string filepath = state.csv_files[state.selected_file_idx];
+
+                std::thread([this, filepath]() {
+                    try {
+                        auto loaded_data = load_csv(filepath);
+
+                        std::lock_guard<std::mutex> lock(state.gui_mutex);
+                        state.raw_data = std::move(loaded_data);
+                        state.preprocessor.initialize_from_data(state.raw_data);
+                        state.is_fitted = false;
+
+                        state.is_loading_csv = false;
+                        //Maybe add status message
+                    }
+                    catch (const std::exception& e) {
+                        std::lock_guard<std::mutex> lock(state.gui_mutex);
+                        state.is_loading_csv = false;
+                    }
+                    }).detach();
             }
         }
         show_preprocessor_settings(state);
@@ -85,7 +118,7 @@ void AppGUI::renderTrainTab() {
 }
 
 // -----------------------------------------------------------------
-// ZAK£ADKA PREDICT (pozostaje bez zmian z Twojego kodu)
+// ZAK£ADKA PREDICT
 // -----------------------------------------------------------------
 void AppGUI::renderPredictTab() {
     if (ImGui::BeginTable("PredictLayout", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchSame)) {
@@ -117,7 +150,7 @@ void AppGUI::renderPredictTab() {
                     std::string filepath = state.bin_files[n];
 
                     // Make thread to load model
-                    std::thread([&state, filepath]() {
+                    std::thread([this, filepath]() {
                         try {
                             state.nn.load(filepath);
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
@@ -145,7 +178,7 @@ void AppGUI::renderPredictTab() {
                     state.selected_json_idx = n;
                     std::string filepath = state.json_files[n];
 
-                    std::thread([&state, filepath]() {
+                    std::thread([this, filepath]() {
                         try {
                             state.preprocessor.load(filepath);
                             state.is_fitted = true;
