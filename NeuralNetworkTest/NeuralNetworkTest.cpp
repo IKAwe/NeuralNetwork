@@ -219,7 +219,7 @@ namespace NeuralNetworkTest
             DataPreprocessor loaded_prep;
             loaded_prep.load("datapreprocessor_test");
             auto& loaded_columns = loaded_prep.get_columns();
-            auto& first_col = dynamic_cast<NumericalColumn*>(&loaded_columns[0])
+            //auto& first_col = dynamic_cast<NumericalColumn*>(&loaded_columns[0]);
         }
     };
 

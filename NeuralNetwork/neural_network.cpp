@@ -147,6 +147,9 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
             on_epoch_end(EpochStats(epoch+1, epoch_loss));
 		}
     }
+    auto end_time = std::chrono::steady_clock::now();
+    auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    std::cout << "Training completed in " << elapsed_milliseconds / 1000.0 << " seconds." << std::endl;
 }
 
 void NeuralNetwork::save(const std::string& filename) {
@@ -207,7 +210,5 @@ void NeuralNetwork::load(const std::string& filename) {
         layer->load(in);
         add_layer(std::move(layer));
     }
-	auto end_time = std::chrono::steady_clock::now();
-	auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-	std::cout << "Training completed in " << elapsed_milliseconds/1000.0 << " seconds." << std::endl;
+
 }

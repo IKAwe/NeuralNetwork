@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
+#include <omp.h>
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
@@ -104,11 +105,21 @@ public:
 		if (col_nb != other.rows_nb) {
 			throw std::runtime_error("Matrix dimensions do not match for multiplication");
 		}
+		const double* A = data.data();
+		const double* B = other.data.data();
+		double* C = result.data.data();
+
+		int r_nb = (int)rows_nb;
+		int c_nb = (int)col_nb;
+		int other_c_nb = (int)other.col_nb;
+
 		Matrix result(rows_nb, other.col_nb);
-		for (size_t i = 0; i < rows_nb; ++i) {
-			for (size_t k = 0; k < col_nb; ++k) {
-				for (size_t j = 0; j < other.col_nb; ++j) {
-					result(i, j) += (*this)(i, k) * other(k, j);
+#pragma omp parallel for
+		for (int i = 0; i < r_nb; ++i) {
+			for (int k = 0; k < c_nb; ++k) {
+				double a_ik = A[i * c_nb + k];
+				for (int j = 0; j < other_c_nb; ++j) {
+					C[i * other_c_nb + j] += a_ik * B[k * other_c_nb + j];
 				}
 			}
 		}
@@ -164,8 +175,13 @@ public:
 
 	Matrix operator*(const double scalar) const {
 		Matrix result(rows_nb, col_nb);
-		for (size_t i = 0; i < data.size(); ++i) {
-			result.data[i] = data[i] * scalar;
+		int n = (int)data.size();
+		const double* src = data.data();
+		double* dst = result.data.data();
+
+#pragma omp parallel for simd
+		for (int i = 0; i < n; ++i) {
+			dst[i] = src[i] * scalar;
 		}
 		return result;
 	}
@@ -174,8 +190,14 @@ public:
 			throw std::runtime_error("Matrix dimensions do not match for subtraction");
 		}
 		Matrix result(rows_nb, col_nb);
-		for (size_t i = 0; i < data.size(); ++i) {
-			result.data[i] = data[i] - other.data[i];
+		int n = (int)data.size();
+		const double* A = data.data();
+		const double* B = other.data.data();
+		double* C = result.data.data();
+
+#pragma omp parallel for simd
+		for (int i = 0; i < n; ++i) {
+			C[i] = A[i] - B[i];
 		}
 		return result;
 	}
@@ -184,10 +206,15 @@ public:
 			throw std::runtime_error("Matrix dimensions do not match for addition");
 		}
 		Matrix result(rows_nb, col_nb);
-		for (size_t i = 0; i < data.size(); ++i) {
-			result.data[i] = data[i] + other.data[i];
+		int n = (int)data.size();
+		const double* A = data.data();
+		const double* B = other.data.data();
+		double* C = result.data.data();
+
+#pragma omp parallel for simd
+		for (int i = 0; i < n; ++i) {
+			C[i] = A[i] + B[i];
 		}
-		return result;
 	}
 	Matrix transpose() const {
 		Matrix result(col_nb, rows_nb);
@@ -203,8 +230,14 @@ public:
 			throw std::runtime_error("Dimensions must match for Hadamard product");
 		}
 		Matrix result(rows_nb, col_nb);
-		for (size_t i = 0; i < data.size(); ++i) {
-			result.data[i] = data[i] * other.data[i];
+		int n = (int)data.size();
+		const double* A = data.data();
+		const double* B = other.data.data();
+		double* C = result.data.data();
+
+#pragma omp parallel for simd
+		for (int i = 0; i < n; ++i) {
+			C[i] = A[i] * B[i];
 		}
 		return result;
 	}
@@ -213,7 +246,14 @@ public:
 		if (rows_nb != other.rows_nb || col_nb != other.col_nb) {
 			throw std::runtime_error("Dimensions do not match for addition");
 		}
-		for (size_t i = 0; i < data.size(); ++i) data[i] += other.data[i];
+		int n = (int)data.size();
+		double* A = data.data();
+		const double* B = other.data.data();
+
+#pragma omp parallel for simd
+		for (int i = 0; i < n; ++i) {
+			A[i] += B[i];
+		}
 		return *this;
 	}
 	void zero() {
