@@ -169,56 +169,43 @@ void DataPreprocessor::fit(const StringMatrix& data) {
 
 Dataset DataPreprocessor::transform(const StringMatrix& data) {
     size_t num_rows = data.get_rows_nb() - 1;
-    size_t input_cols_count = 0;
-    size_t output_cols_count = 0;
+    std::vector<Column*> input_cols;
+    std::vector<Column*> output_cols;
+    std::vector<int> in_cat_counts;
+    std::vector<int> out_cat_counts;
 
 	// Count how many input and output columns we have based on the is_target_column flag
     for (const auto& col : columns) {
 		if (!col->include_column) continue; // Skip not included
-        if (col->is_target_column) output_cols_count++;
-        else input_cols_count++;
-    }
-
-	Dataset ds(num_rows, input_cols_count, output_cols_count);
-
-	//Calculate category counts for metadata
-	size_t meta_in_idx = 0; // To  prevent out of range access when some columns are not included or all are target columns
-    size_t meta_out_idx = 0;
-
-    for (const auto& col : columns) {
-        if (!col->include_column) continue;
-
         int cat_count = 0;
         if (auto cat_col = dynamic_cast<CategoricalColumn*>(col.get())) {
             cat_count = static_cast<int>(cat_col->get_categories().size());
         }
-
         if (col->is_target_column) {
-            // U¿ywamy meta_out_idx, a nie i!
-            ds.metadata.output_category_counts[meta_out_idx++] = cat_count;
+            output_cols.push_back(col.get());
+            out_cat_counts.push_back(cat_count);
         }
         else {
-            // U¿ywamy meta_in_idx, a nie i!
-            ds.metadata.input_category_counts[meta_in_idx++] = cat_count;
+            input_cols.push_back(col.get());
+            in_cat_counts.push_back(cat_count);
         }
     }
-	// Transform data row by row
+
+	Dataset ds(num_rows, input_cols.size(), output_cols.size());
+
+    ds.metadata.input_category_counts = std::move(in_cat_counts);
+    ds.metadata.output_category_counts = std::move(out_cat_counts);
+
     for (size_t r = 1; r < data.get_rows_nb(); ++r) {
-        size_t in_idx = 0;
-        size_t out_idx = 0;
 
-        for (const auto& col : columns) {
-			if (!col->include_column) continue; // Skip not included
-            double val = col->transform(data(r, col->get_index()));
-
-            if (col->is_target_column) {
-                ds.output_data(r - 1, out_idx++) = val;
-            }
-            else {
-                ds.input_data(r - 1, in_idx++) = val;
-            }
+        for (size_t i = 0; i < input_cols.size(); ++i) {
+            ds.input_data(r - 1, i) = input_cols[i]->transform(data(r, input_cols[i]->get_index()));
+        }
+        for (size_t o = 0; o < output_cols.size(); ++o) {
+            ds.output_data(r - 1, o) = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
         }
     }
+
     return ds;
 }
 
