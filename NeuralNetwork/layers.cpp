@@ -5,9 +5,22 @@ Dense::Dense(size_t id, size_t in_dim, size_t out_dim)
     : Layer(id, in_dim, out_dim), weights(in_dim, out_dim), bias(1, out_dim), accumulated_gradients(in_dim, out_dim), accumulated_bias_gradients(1, out_dim) {}
 
 bool Dense::initialize() {
-    // He initialization
-    std::default_random_engine generator;
-    double std_dev = std::sqrt(2.0 / weights.get_rows_nb());
+    std::random_device rd;
+    std::mt19937 generator(rd());
+
+    double std_dev = 1.0;
+    double n_in = static_cast<double>(weights.get_rows_nb());
+    double n_out = static_cast<double>(weights.get_columns_nb());
+
+    if (init_method == InitializationMethod::He) {
+        // He: ReLU
+        std_dev = std::sqrt(2.0 / n_in);
+    }
+    else if (init_method == InitializationMethod::Xavier) {
+        // Xavier - Sigmoid/Tanh/Linear
+        std_dev = std::sqrt(2.0 / (n_in + n_out));
+    }
+
     std::normal_distribution<double> distribution(0.0, std_dev);
 
     for (size_t r = 0; r < weights.get_rows_nb(); ++r) {
