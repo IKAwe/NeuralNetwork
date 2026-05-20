@@ -55,7 +55,7 @@ void NumericalColumn::fit(const StringMatrix& data) {
 double NumericalColumn::transform(const std::string_view cell) {
     double val = 0.0;
     std::from_chars(cell.data(), cell.data() + cell.size(), val);
-    return (val - mean) / std_dev;
+    return std::clamp((val - mean) / std_dev, -5.0, 5.0);
 }
 
 std::string NumericalColumn::inverse_transform(const double val) const {
@@ -111,7 +111,7 @@ double CategoricalColumn::transform(const std::string_view cell) {
 
 	// Check if the category was found and return its index as a double. If not found, return -1.0.
     if (it != categories.end() && *it == cell) {
-        return static_cast<double>(std::distance(categories.begin(), it));
+        return static_cast<double>(std::distance(categories.begin(), it))/categories.size();
     }
 
     return -1.0;
