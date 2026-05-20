@@ -1,5 +1,6 @@
 #include "app_gui.h"
 #include "imgui.h"
+#include "predict_GUI.h"
 #include "csv_loader.h"
 #include "layer_maker.h"
 #include <filesystem>
@@ -27,8 +28,24 @@ void AppGUI::renderTrainTab() {
             }
         }
         if (ImGui::Button("Refresh")) {
+            std::string currently_selected = "";
+            if (state.selected_file_idx >= 0 && state.selected_file_idx < state.csv_files.size()) {
+                currently_selected = state.csv_files[state.selected_file_idx];
+            }
             state.csv_files = find_files_by_extension(".csv");
-            state.selected_file_idx = state.csv_files.empty() ? -1 : 0;
+            state.selected_file_idx = -1;
+
+            if (!currently_selected.empty()) {
+                for (int i = 0; i < state.csv_files.size(); ++i) {
+                    if (state.csv_files[i] == currently_selected) {
+                        state.selected_file_idx = i;
+                        break;
+                    }
+                }
+            }
+            if (state.selected_file_idx == -1 && !state.csv_files.empty()) {
+                state.selected_file_idx = 0;
+            }
         }
 
         ImGui::SameLine();
@@ -130,10 +147,8 @@ void AppGUI::renderPredictTab() {
         if (ImGui::Button("Refresh Files in Folder", ImVec2(-FLT_MIN, 30))) {
             state.bin_files = find_files_by_extension(".bin");
             state.json_files = find_files_by_extension(".json");
-            state.csv_files = find_files_by_extension(".csv");
             state.selected_model_idx = state.bin_files.empty() ? -1 : 0;
             state.selected_json_idx = state.json_files.empty() ? -1 : 0;
-            state.selected_csv_idx = state.csv_files.empty() ? -1 : 0;
             state.predict_status_msg = "Files list refreshed.";
         }
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
@@ -159,6 +174,7 @@ void AppGUI::renderPredictTab() {
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Model Load Error: " + std::string(e.what());
+                            state.nn.clear_layers();
                         }
                     }).detach();
                 }
@@ -188,6 +204,7 @@ void AppGUI::renderPredictTab() {
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Config Load Error: " + std::string(e.what());
+                            state.is_fitted = false;
                         }
                         }).detach();
                 }
@@ -196,69 +213,33 @@ void AppGUI::renderPredictTab() {
             ImGui::EndCombo();
         }
 
-        // 3. DROPDOWN: Wybór nowych danych (.csv)
-        const char* csv_preview = (state.selected_csv_idx >= 0 && state.selected_csv_idx < state.csv_files.size())
-            ? state.csv_files[state.selected_csv_idx].c_str() : "Select .csv dataset...";
-
-        if (ImGui::BeginCombo("Input Data (CSV)", csv_preview)) {
-            for (int n = 0; n < state.csv_files.size(); n++) {
-                const bool is_selected = (state.selected_csv_idx == n);
-                if (ImGui::Selectable(state.csv_files[n].c_str(), is_selected)) {
-                    state.selected_csv_idx = n;
-                }
-                if (is_selected) ImGui::SetItemDefaultFocus();
-            }
-            ImGui::EndCombo();
-        }
+        //======== Check if datapreprocessor matches neural network ========= <= TO DO
 
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
-        // Zapis wyniku
-        ImGui::InputTextWithHint("Output File", "e.g., predictions.csv", state.output_filename, IM_ARRAYSIZE(state.output_filename));
-        ImGui::Spacing();
+        // --- PREDICT ---
+        bool ready_to_predict = state.is_fitted && !state.nn.get_layers().empty();
 
-        // --- PRZYCISK PREDICT ---
-        bool ready_to_predict = (state.selected_model_idx >= 0 && state.selected_json_idx >= 0 && state.selected_csv_idx >= 0);
-
-        if (!ready_to_predict) ImGui::BeginDisabled();
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
-
-        if (ImGui::Button("PREDICT & SAVE", ImVec2(-FLT_MIN, 50))) {
-            std::string input_csv = state.csv_files[state.selected_csv_idx];
-            std::string out_csv = state.output_filename;
-
-            // TODO: Podpiêcie w³aœciwej logiki przewidywania i zapisu!
-            // Wykonamy to w osobnym w¹tku w kolejnym kroku :)
-            state.predict_status_msg = "[TODO] Uruchamianie predykcji na pliku: " + input_csv;
+        if (ready_to_predict) {
+            show_prediction_form(state);
+        }
+        else {
+            ImGui::TextDisabled("Load Model and Preprocessor config to get your prediction.");
         }
 
-        ImGui::PopStyleColor();
-        if (!ready_to_predict) ImGui::EndDisabled();
 
-        // Status
-        if (!state.predict_status_msg.empty()) {
-            if (state.predict_status_msg.find("Error") != std::string::npos) {
-                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", state.predict_status_msg.c_str());
-            }
-            else {
-                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f), "%s", state.predict_status_msg.c_str());
-            }
-        }
-
-        // --- Kolumna 2: Statystyki ---
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("Statistics & Logs");
+        ImGui::Text("Network Outputs");
         ImGui::Separator();
-        ImGui::BeginChild("Stats", ImVec2(0, 0), true);
-        ImGui::Text("Tu beda wyniki predykcji...");
-        ImGui::EndChild();
+
+        show_prediction_results(state);
 
         ImGui::EndTable();
     }
 }
 
 // -----------------------------------------------------------------
-// G£ÓWNA RAMA OKNA (Skleja wszystko w ca³oœæ)
+// G£ÓWNA RAMA OKNA
 // -----------------------------------------------------------------
 void AppGUI::render() {
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);

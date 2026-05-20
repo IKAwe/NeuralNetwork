@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /NeuralNetwork/main.cpp
 /imgui-master/examples/example_glfw_opengl3/preprocessor_config.json
+/imgui-master/examples/example_glfw_opengl3/neural_network.bin

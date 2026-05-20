@@ -157,6 +157,7 @@
     <ClInclude Include="layers.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Income.csv" />
     <None Include="StudentPerformanceFactors.csv" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

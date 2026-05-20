@@ -55,9 +55,11 @@ struct AppState {
 
     int selected_model_idx = -1;
     int selected_json_idx = -1;
-    int selected_csv_idx = -1;
 
-    char output_filename[256] = "predictions.csv";
+    std::map<size_t, float> predict_num_inputs;
+    std::map<size_t, int> predict_cat_inputs;
+    std::vector<std::string> predict_results;
+
     std::string predict_status_msg = "";
 
 };

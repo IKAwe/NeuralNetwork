@@ -5,6 +5,11 @@
 #include <vector>
 #include "data_structures.h"
 
+enum class InitializationMethod {
+    Xavier,
+    He
+};
+
 class Layer {
 protected:
     size_t input_nb = 0;
@@ -41,6 +46,7 @@ private:
 	Matrix accumulated_bias_gradients;
     Matrix weights;
     Matrix bias;
+    InitializationMethod init_method = InitializationMethod::Xavier;
 
 public:
     Dense(size_t id, size_t in_dim, size_t out_dim);
@@ -93,27 +99,6 @@ public:
 //    bool save(std::ofstream& out) const override;
 //    bool load(std::ifstream& in) override;
 //};
-//
-//class ReLU : public Layer {
-//public:
-//    ReLU(size_t id) : Layer(id) {}
-//    Matrix feedforward(const Matrix& inputs) override;
-//    Matrix backpropagate(const Matrix& inputs, const Matrix& gradients_from_next_layer) override;
-//    bool initialize() override { return true; }
-//    void update_params(double lr, size_t batch_size) override {}
-//    bool save(std::ofstream& out) const override { return true; }
-//    bool load(std::ifstream& in) override { return true; }
-//};
-//
-//class Sigmoid : public Layer {
-//public:
-//    Sigmoid(size_t id) : Layer(id) {}
-//    Matrix feedforward(const Matrix& inputs) override;
-//    Matrix backpropagate(const Matrix& inputs, const Matrix& gradients_from_next_layer) override;
-//    bool initialize() override { return true; }
-//    void update_params(double lr, size_t batch_size) override {}
-//    bool save(std::ofstream& out) const override { return true; }
-//    bool load(std::ifstream& in) override { return true; }
-//};
+
 
 #endif
