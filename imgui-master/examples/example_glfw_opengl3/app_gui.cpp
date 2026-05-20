@@ -98,6 +98,7 @@ void AppGUI::renderTrainTab() {
                     }).detach();
             }
         }
+        ImGui::Text("Number of records of current dataset: %zu", state.raw_data.get_rows_nb());
         show_preprocessor_settings(state);
         // --- Kolumna 2: Architektura ---
         ImGui::TableSetColumnIndex(1);

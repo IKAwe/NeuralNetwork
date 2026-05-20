@@ -139,11 +139,11 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
         size_t print_interval = (params.epochs >= 10) ? (params.epochs / 10) : 1;
         if (epoch % print_interval == 0 || epoch == params.epochs - 1) {
             std::cout << "Epoch [" << epoch + 1 << "/" << params.epochs << "] - Loss: " << epoch_loss << std::endl;
+            //Callback
+            on_epoch_end(EpochStats(epoch + 1, epoch_loss));
+
         }
-		//Send epoch stats to callback
-        if (on_epoch_end) {
-            on_epoch_end(EpochStats(epoch+1, epoch_loss));
-		}
+
     }
 }
 

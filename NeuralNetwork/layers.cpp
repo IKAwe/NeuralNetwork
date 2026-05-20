@@ -37,9 +37,11 @@ bool Dense::initialize() {
 Matrix Dense::feedforward(const Matrix& inputs) {
     // Y= X * W + B
     Matrix output = inputs * weights;
+    size_t rows = output.get_rows_nb();
+    size_t cols = output.get_columns_nb();
     // Add biases
-    for (size_t r = 0; r < output.get_rows_nb(); ++r) {
-        for (size_t c = 0; c < output.get_columns_nb(); ++c) {
+    for (size_t r = 0; r < rows; ++r) {
+        for (size_t c = 0; c < cols; ++c) {
             output(r, c) += bias(0, c);
         }
     }
@@ -51,28 +53,24 @@ Matrix Dense::backpropagate(const Matrix& inputs, const Matrix& gradients_from_n
     Matrix inputs_T = inputs.transpose();
     Matrix dW = inputs_T * gradients_from_next_layer;
     // Add gradients (sum then will be divided by batch size)
-    for (size_t r = 0; r < dW.get_rows_nb(); ++r) {
-        for (size_t c = 0; c < dW.get_columns_nb(); ++c) {
-            accumulated_gradients(r, c) += dW(r, c);
-        }
-    }
+    accumulated_gradients += dW;
 	// Calculate gradients for bias (dL/db)
-    for (size_t r = 0; r < gradients_from_next_layer.get_rows_nb(); ++r) {
-        for (size_t c = 0; c < gradients_from_next_layer.get_columns_nb(); ++c) {
+    size_t grad_rows = gradients_from_next_layer.get_rows_nb();
+    size_t grad_cols = gradients_from_next_layer.get_columns_nb();
+
+    for (size_t r = 0; r < grad_rows; ++r) {
+        for (size_t c = 0; c < grad_cols; ++c) {
             // Bias to wektor wierszowy (1 x C), wiêc indeks wiersza to zawsze 0
             accumulated_bias_gradients(0, c) += gradients_from_next_layer(r, c);
         }
     }
     // Calc graident for the inputs to the layer (dL/dz)
     Matrix weights_T = weights.transpose();
-    Matrix gradients_to_prev_layer = gradients_from_next_layer * weights_T;
-
-    return gradients_to_prev_layer;
+    return gradients_from_next_layer * weights_T;
 }
 
+//Update parameters - we assume that Loss funciton already divided gradients by batch size.
 void Dense::update_params(double lr, size_t batch_size) {
-
-    // Update weigths: W = W -(lr/batch_size)* dW
     weights = weights - (accumulated_gradients * lr);
     bias = bias - (accumulated_bias_gradients * lr);
     // Zero the gradients after a batch
