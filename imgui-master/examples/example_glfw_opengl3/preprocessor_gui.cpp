@@ -152,6 +152,17 @@ void show_preprocessor_settings(AppState& state) {
                 std::thread([&state]() {
                     auto result = state.preprocessor.transform(state.raw_data);
                     state.dataset = std::move(result);
+                    //==Make embedding configs for each categorical column=====
+                    state.embed_configs.clear();
+                    const auto& in_cat_counts = state.dataset->metadata.input_category_counts;
+                    for (size_t i = 0; i < in_cat_counts.size(); ++i) {
+                        int vocab = in_cat_counts[i];
+                        if (vocab > 0) {
+                            size_t embed_dim = std::max((size_t)1, std::min((size_t)50, (size_t)(vocab*2.0/3.0)));
+                            state.embed_configs.push_back({ i, (size_t)vocab, embed_dim });
+                        }
+                    }
+                    //=========================================================
                     state.is_transforming = false;
                     }).detach();
             }

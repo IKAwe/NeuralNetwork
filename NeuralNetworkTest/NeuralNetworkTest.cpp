@@ -7,6 +7,7 @@
 #include "data_preprocessor.h"
 #include "neural_network.h"
 #include "loss_functions.h"
+#include "embedding_layer.h"
 #include "layer_maker.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -297,6 +298,64 @@ namespace NeuralNetworkTest
             Assert::AreEqual(0.5 - learning_rate * 10.0, layer.get_weights()(0, 0), 0.0001);
             Assert::AreEqual(0.1 - learning_rate * 20.0, layer.get_weights()(1, 0), 0.0001);
 			Assert::AreEqual(0.2 - learning_rate * grad_next(0, 0), layer.get_bias()(0, 0), 0.0001);
+        }
+    };
+
+    TEST_CLASS(EmbeddingLayerTests){
+        TEST_METHOD(TestInitializationAndDimensions)
+        {
+            std::vector<EmbeddingConfig> configs = {
+                {1, 5, 3}
+            };
+
+            TabularEmbeddingLayer layer(1, 2, configs);
+
+            // Output should be: 1 (numeric) + 3 (vectors) = 4
+            Assert::AreEqual(static_cast<size_t>(2), layer.get_input_nb(), L"Bad output size");
+            Assert::AreEqual(static_cast<size_t>(4), layer.get_output_nb(), L"Bad output size");
+        }
+
+        TEST_METHOD(TestFeedforwardPassThrough)
+        {
+            std::vector<EmbeddingConfig> configs = { {1, 5, 3} };
+            TabularEmbeddingLayer layer(1, 2, configs);
+            layer.initialize();
+
+            Matrix inputs(2, 2);
+            inputs(0, 0) = 42.5; 
+            inputs(0, 1) = 2.0;  // Category
+            inputs(1, 0) = 15.0; 
+            inputs(1, 1) = 0.0;  // Category
+
+            Matrix output = layer.feedforward(inputs);
+
+            Assert::AreEqual(static_cast<size_t>(2), output.get_rows_nb(), L"Bad output row size");
+            Assert::AreEqual(static_cast<size_t>(4), output.get_columns_nb(), L"Bad output row size");
+
+            Assert::AreEqual(42.5, output(0, 0), 0.0001, L"Numeric column got changed");
+            Assert::AreEqual(15.0, output(1, 0), 0.0001, L"Numeric column got changed");
+        }
+
+        TEST_METHOD(TestBackpropagateGradients)
+        {
+            std::vector<EmbeddingConfig> configs = { {1, 5, 3} };
+            TabularEmbeddingLayer layer(1, 2, configs);
+            layer.initialize();
+
+            Matrix inputs(1, 2);
+            inputs(0, 0) = 10.0; 
+            inputs(0, 1) = 1.0;  // Category
+
+            Matrix incoming_gradients(1, 4);
+            incoming_gradients(0, 0) = -0.5; 
+            incoming_gradients(0, 1) = 0.2;  // Errors for embeddings...
+            incoming_gradients(0, 2) = 0.3;  //...
+            incoming_gradients(0, 3) = 0.4;  //...
+
+            Matrix input_gradients = layer.backpropagate(inputs, incoming_gradients);
+
+            Assert::AreEqual(0.0, input_gradients(0, 0), 0.0001, L"Embedding gradient should be 0");
+            Assert::AreEqual(0.0, input_gradients(0, 1), 0.0001, L"Embedding gradient should be 0");
         }
     };
 

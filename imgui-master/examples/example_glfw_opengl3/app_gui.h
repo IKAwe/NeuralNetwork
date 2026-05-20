@@ -3,6 +3,7 @@
 #include <vector>
 #include "neural_network.h"
 #include "layer_maker.h"
+#include "embedding_layer.h"
 #include "data_preprocessor.h"
 #include "loss_func_maker.h"
 #include <optional>
@@ -30,6 +31,7 @@ struct AppState {
     //Architecture
     std::vector<LayerUI> gui_layers;
     std::vector<const char*> layer_names = LayerMaker::get_available_names();
+    std::vector<EmbeddingConfig> embed_configs; // Used for creating embedding layer
     // --- Stan dla zak³adki TRAIN ---
     NeuralNetwork nn;
     char network_filepath[128] = "neural_network.bin";

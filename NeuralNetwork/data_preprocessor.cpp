@@ -104,7 +104,11 @@ void CategoricalColumn::fit(const StringMatrix& data) {
         categories.emplace_back(v);
     }
 }
-
+/**
+ * @brief Transform each cell to its category index (int). This is specifically made for embedding layer - if you don't add embedding layer as the first layer you will have poor results due to not normalised inputs.
+ * @param cell 
+ * @return 
+ */
 double CategoricalColumn::transform(const std::string_view cell) {
 	//Since categories are sorted, we can use binary search to find the index of the category
     auto it = std::lower_bound(categories.begin(), categories.end(), cell);

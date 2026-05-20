@@ -45,6 +45,9 @@
     <ClCompile Include="layer_maker.h">
       <Filter>Pliki nagłówkowe\Component makers</Filter>
     </ClCompile>
+    <ClCompile Include="embedding_layer.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data_preprocessor.h">
@@ -67,6 +70,9 @@
     </ClInclude>
     <ClInclude Include="loss_func_maker.h">
       <Filter>Pliki nagłówkowe\Component makers</Filter>
+    </ClInclude>
+    <ClInclude Include="embedding_layer.h">
+      <Filter>Pliki nagłówkowe\Neural network components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

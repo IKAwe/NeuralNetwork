@@ -19,6 +19,32 @@ void show_architecture_settings(AppState& state) {
 
     if (state.is_architecture_locked) ImGui::BeginDisabled();
 
+    //EMBEDDING info
+    size_t projected_in_dim = 0;
+
+    if (state.dataset.has_value()) {
+        size_t raw_inputs = state.dataset->input_data.get_columns_nb();
+        size_t categorical_cols = state.embed_configs.size();
+        projected_in_dim = raw_inputs;
+
+        for (const auto& conf : state.embed_configs) {
+            projected_in_dim += (conf.embed_dim - 1);
+        }
+
+        ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "Input Stage (Auto-Configured)");
+        ImGui::BeginChild("InputStage", ImVec2(0, 60), true);
+        ImGui::Text("Raw Features: %zu (%zu categorical)", raw_inputs, categorical_cols);
+
+        if (categorical_cols > 0) {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "-> TabularEmbeddingLayer injected. Expanded Input: %zu", projected_in_dim);
+        }
+        else {
+            ImGui::TextDisabled("-> Pure numerical data. No embeddings needed.");
+        }
+        ImGui::EndChild();
+        ImGui::Spacing();
+    }
+
     // Dynamic table for layers configuration
     if (ImGui::BeginTable("LayersTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         ImGui::TableSetupColumn("Type");
@@ -44,7 +70,7 @@ void show_architecture_settings(AppState& state) {
 
             if (i == 0) {
                 if (state.dataset.has_value() && state.dataset->input_data.get_columns_nb() > 0) {
-                    state.gui_layers[i].inputs = (int)state.dataset->input_data.get_columns_nb();
+                    state.gui_layers[i].inputs = (int)projected_in_dim;
                 }
             }
             else {
@@ -88,7 +114,6 @@ void show_architecture_settings(AppState& state) {
             ImGui::TableSetColumnIndex(2);
             ImGui::SetNextItemWidth(-FLT_MIN);
             if (current_type  == LayerType::Dense) {
-                // ZMIANA: Zablokuj edycjê dla ostatniej warstwy, jeœli wymusza to dataset
                 if (i == state.gui_layers.size() - 1 && state.dataset.has_value()) {
                     ImGui::TextDisabled("%d (Cel)", state.gui_layers[i].outputs);
                 }
@@ -176,6 +201,20 @@ void show_architecture_settings(AppState& state) {
             if (!state.is_architecture_locked)
             {
                 state.nn.clear_layers();
+
+                size_t layer_id_counter = 0;
+                size_t current_in_dim = state.dataset->input_data.get_columns_nb();
+
+                // --- AUTOMATICALLY ADD EMBEDDING ---
+                if (!state.embed_configs.empty()) {
+                    auto embed_layer = std::make_unique<TabularEmbeddingLayer>(
+                        layer_id_counter++, current_in_dim, state.embed_configs
+                    );
+
+                    current_in_dim = embed_layer->get_output_nb();
+                    state.nn.add_layer(std::move(embed_layer));
+                }
+                //--- ADD REST OF THE LAYERS ---
                 for (size_t i = 0; i < state.gui_layers.size(); ++i) {
                     std::string name = state.layer_names[state.gui_layers[i].type_index];
                     auto layer = LayerMaker::create_by_name(name, i, state.gui_layers[i]);
@@ -238,6 +277,8 @@ void show_architecture_settings(AppState& state) {
             for (const auto& layer : loaded_layers) {
                 LayerUI config;
                 std::string name = layer->get_layer_name();
+
+                if (name == "TabularEmbedding") continue; //skip embedding
 
                 for (int j = 0; j < (int)state.layer_names.size(); ++j) {
                     if (std::string(state.layer_names[j]) == name) {
