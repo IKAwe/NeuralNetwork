@@ -167,12 +167,15 @@ void DataPreprocessor::fit(const StringMatrix& data) {
     }
 }
 
-Dataset DataPreprocessor::transform(const StringMatrix& data) {
-    size_t num_rows = data.get_rows_nb() - 1;
+Dataset DataPreprocessor::transform(const StringMatrix& data, double test_fraction) {
+    size_t num_rows = data.get_rows_nb() - 1; //First row is the header
     std::vector<Column*> input_cols;
     std::vector<Column*> output_cols;
     std::vector<int> in_cat_counts;
     std::vector<int> out_cat_counts;
+
+    size_t test_row_nb = static_cast<size_t>(num_rows * test_fraction);
+    size_t train_row_nb = num_rows - test_row_nb;
 
 	// Count how many input and output columns we have based on the is_target_column flag
     for (const auto& col : columns) {
@@ -191,18 +194,27 @@ Dataset DataPreprocessor::transform(const StringMatrix& data) {
         }
     }
 
-	Dataset ds(num_rows, input_cols.size(), output_cols.size());
+	Dataset ds(train_row_nb, test_row_nb, input_cols.size(), output_cols.size());
 
     ds.metadata.input_category_counts = std::move(in_cat_counts);
     ds.metadata.output_category_counts = std::move(out_cat_counts);
 
-    for (size_t r = 1; r < data.get_rows_nb(); ++r) {
+    for (size_t r = 1; r <= train_row_nb; ++r) {
 
         for (size_t i = 0; i < input_cols.size(); ++i) {
             ds.input_data(r - 1, i) = input_cols[i]->transform(data(r, input_cols[i]->get_index()));
         }
         for (size_t o = 0; o < output_cols.size(); ++o) {
             ds.output_data(r - 1, o) = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
+        }
+    }
+    for (size_t r = train_row_nb+1; r <= num_rows; ++r) {
+        size_t test_idx = r - train_row_nb - 1;
+        for (size_t i = 0; i < input_cols.size(); ++i) {
+            ds.test_inputs(test_idx, i) = input_cols[i]->transform(data(r, input_cols[i]->get_index()));
+        }
+        for (size_t o = 0; o < output_cols.size(); ++o) {
+            ds.test_outputs(test_idx, o) = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
         }
     }
 

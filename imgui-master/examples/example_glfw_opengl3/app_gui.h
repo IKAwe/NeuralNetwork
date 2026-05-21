@@ -43,8 +43,10 @@ struct AppState {
     std::vector<const char*> loss_names = LossFuncMaker::get_available_names();
     int selected_loss_idx = 0;
     std::atomic<bool> is_training = false;
+    std::atomic<bool> stop_training = false;
 
     std::vector<float> loss_history;  //do zminny na matrix
+    std::vector<float> test_loss_history;
     std::vector<std::string> training_logs;
     std::mutex gui_mutex; // Do synchronizacji dostêpu do loss_history i training_logs
 

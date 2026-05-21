@@ -123,8 +123,12 @@ void AppGUI::renderTrainTab() {
             ImGui::EndChild();
 
             if (!state.loss_history.empty()) {
-                ImGui::PlotLines("Loss", state.loss_history.data(), (int)state.loss_history.size(),
+                ImGui::Text("Train Loss");
+                ImGui::PlotLines("##train_loss", state.loss_history.data(), (int)state.loss_history.size(),
                     0, nullptr, FLT_MAX, FLT_MAX, ImVec2(-FLT_MIN, 150));
+                ImGui::Text("Test Loss ");
+                ImGui::PlotLines("##test_loss", state.test_loss_history.data(), (int)state.test_loss_history.size(),
+                    0, nullptr, FLT_MAX, FLT_MAX, ImVec2(-FLT_MIN, 80));
             }
             else {
                 ImGui::TextDisabled("Waiting for training to start...");

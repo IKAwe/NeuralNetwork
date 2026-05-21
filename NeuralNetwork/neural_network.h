@@ -21,7 +21,8 @@ struct Hyperparams {
 struct EpochStats {
     int epoch;
     double loss;
-    EpochStats(int e, double l) : epoch(e), loss(l) {}
+    double test_loss;
+    EpochStats(int e, double l, double t_l) : epoch(e), loss(l), test_loss(t_l) {}
 };
 
 class NeuralNetwork {
@@ -39,7 +40,7 @@ public:
 
     Matrix predict(const Matrix& inputs);
 
-    void train(const Dataset& dataset, const Hyperparams params, std::function<void(EpochStats)> on_epoch_end = nullptr);
+    void train(const Dataset& dataset, const Hyperparams params, std::function<bool(EpochStats)> on_epoch_end = nullptr);
 
     void set_loss(std::unique_ptr<Loss> loss) {
         loss_function = std::move(loss);
