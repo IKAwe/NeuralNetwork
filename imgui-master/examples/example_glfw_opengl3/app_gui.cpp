@@ -28,8 +28,24 @@ void AppGUI::renderTrainTab() {
             }
         }
         if (ImGui::Button("Refresh")) {
+            std::string currently_selected = "";
+            if (state.selected_file_idx >= 0 && state.selected_file_idx < state.csv_files.size()) {
+                currently_selected = state.csv_files[state.selected_file_idx];
+            }
             state.csv_files = find_files_by_extension(".csv");
-            state.selected_file_idx = state.csv_files.empty() ? -1 : 0;
+            state.selected_file_idx = -1;
+
+            if (!currently_selected.empty()) {
+                for (int i = 0; i < state.csv_files.size(); ++i) {
+                    if (state.csv_files[i] == currently_selected) {
+                        state.selected_file_idx = i;
+                        break;
+                    }
+                }
+            }
+            if (state.selected_file_idx == -1 && !state.csv_files.empty()) {
+                state.selected_file_idx = 0;
+            }
         }
 
         ImGui::SameLine();
@@ -158,6 +174,7 @@ void AppGUI::renderPredictTab() {
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Model Load Error: " + std::string(e.what());
+                            state.nn.clear_layers();
                         }
                     }).detach();
                 }
@@ -187,6 +204,7 @@ void AppGUI::renderPredictTab() {
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Config Load Error: " + std::string(e.what());
+                            state.is_fitted = false;
                         }
                         }).detach();
                 }
@@ -195,13 +213,19 @@ void AppGUI::renderPredictTab() {
             ImGui::EndCombo();
         }
 
-        
+        //======== Check if datapreprocessor matches neural network ========= <= TO DO
 
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
         // --- PREDICT ---
-        
-        show_prediction_form(state);
+        bool ready_to_predict = state.is_fitted && !state.nn.get_layers().empty();
+
+        if (ready_to_predict) {
+            show_prediction_form(state);
+        }
+        else {
+            ImGui::TextDisabled("Load Model and Preprocessor config to get your prediction.");
+        }
 
 
         ImGui::TableSetColumnIndex(1);

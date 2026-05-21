@@ -79,5 +79,8 @@
     <None Include="StudentPerformanceFactors.csv">
       <Filter>Pliki zasobów</Filter>
     </None>
+    <None Include="Income.csv">
+      <Filter>Pliki zasobów</Filter>
+    </None>
   </ItemGroup>
 </Project>

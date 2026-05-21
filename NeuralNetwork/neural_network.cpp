@@ -2,6 +2,7 @@
 #include "loss_functions.h"
 #include "layer_maker.h"
 #include <iostream>
+#include <chrono>
 /**
  * @brief Add previosly initialized layer to the model.
  * @param layer Unique pointer to the layer to be added. The function takes ownership of the layer and will manage its lifetime. The layer should be initialized before being added to the model.
@@ -66,6 +67,7 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
     if (!loss_function) {
         throw std::runtime_error("NeuralNetwork::train - Loss function was not added");
     }
+	auto start_time = std::chrono::steady_clock::now();
 
     const Matrix& inputs = dataset.input_data;
     const Matrix& targets = dataset.output_data;
@@ -145,6 +147,9 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
             on_epoch_end(EpochStats(epoch+1, epoch_loss));
 		}
     }
+    auto end_time = std::chrono::steady_clock::now();
+    auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    std::cout << "Training completed in " << elapsed_milliseconds / 1000.0 << " seconds." << std::endl;
 }
 
 void NeuralNetwork::save(const std::string& filename) {
@@ -205,4 +210,5 @@ void NeuralNetwork::load(const std::string& filename) {
         layer->load(in);
         add_layer(std::move(layer));
     }
+
 }

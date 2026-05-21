@@ -4,13 +4,6 @@
 #include <string>
 
 void show_prediction_form(AppState& state) {
-    bool ready_to_predict = state.is_fitted && !state.nn.get_layers().empty();
-
-    if (!ready_to_predict) {
-        ImGui::TextDisabled("Load Model and Preprocessor config to get your prediction.");
-        return;
-    }
-
     ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "Enter data for prediction:");
     ImGui::Spacing();
 
