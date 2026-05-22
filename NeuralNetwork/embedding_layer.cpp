@@ -20,11 +20,15 @@ TabularEmbeddingLayer::TabularEmbeddingLayer(size_t id, size_t input_cols, const
 bool TabularEmbeddingLayer::initialize() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<double> dist(0.0, 0.01);
+
+    std::normal_distribution<double> dist(0.0, 0.1);
 
     for (auto& table : embedding_tables) {
+        size_t cols = table.get_columns_nb();
+        if (cols == 0) continue;
+
         for (size_t r = 0; r < table.get_rows_nb(); ++r) {
-            for (size_t c = 0; c < table.get_columns_nb(); ++c) {
+            for (size_t c = 0; c < cols; ++c) {
                 table(r, c) = dist(gen);
             }
         }

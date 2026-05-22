@@ -115,7 +115,7 @@ double CategoricalColumn::transform(const std::string_view cell) {
 
 	// Check if the category was found and return its index as a double. If not found, return -1.0.
     if (it != categories.end() && *it == cell) {
-        return static_cast<double>(std::distance(categories.begin(), it))/categories.size();
+        return static_cast<double>(std::distance(categories.begin(), it));
     }
 
     return -1.0;
