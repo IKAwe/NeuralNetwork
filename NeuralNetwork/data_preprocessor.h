@@ -87,6 +87,7 @@ struct Dataset {
 
 class DataPreprocessor {
 	std::vector<std::unique_ptr<Column>> columns;
+	bool fitted = false;
 public:
 	/**
 	 * @brief Adds all columns - based on name and index. The function should be called before fit() and transform() functions. Thank to this user will be able to specify which columns should be included, which are the target columns, which are numerical and which are categorical.
@@ -128,4 +129,6 @@ public:
 	 * @param filename The name of the file to load the preprocessor state from. The file should contain the state of the preprocessor as saved by the save() function.
 	 */
 	void load(const std::string& filename);
+
+	bool is_fitted() { return fitted; };
 };

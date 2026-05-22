@@ -22,7 +22,6 @@ struct AppState {
     std::string preprocessor_status_msg = "";
 
     std::atomic<bool> is_fitting = false;
-    bool is_fitted = false;
     StringMatrix raw_data;
     std::atomic<bool> is_transforming = false;
     std::optional<Dataset> dataset;
@@ -36,9 +35,6 @@ struct AppState {
     std::string network_status_msg = "";
     bool is_architecture_locked = false;
 
-    char nn_filepath[128] = "neural_network.bin";
-    std::string nn_status_msg = "";
-
     Hyperparams hyperparams = Hyperparams(100, 32, 0.5f);
     std::vector<const char*> loss_names = LossFuncMaker::get_available_names();
     int selected_loss_idx = 0;
@@ -51,12 +47,16 @@ struct AppState {
     std::mutex gui_mutex; // Do synchronizacji dostêpu do loss_history i training_logs
 
     // --- Stan dla zak³adki PREDICT ---
+
     std::vector<std::string> bin_files;
     std::vector<std::string> json_files;
     //csv_files is already defined
 
     int selected_model_idx = -1;
     int selected_json_idx = -1;
+
+    NeuralNetwork prediction_nn;
+    DataPreprocessor prediction_preprocessor;
 
     std::map<size_t, float> predict_num_inputs;
     std::map<size_t, int> predict_cat_inputs;

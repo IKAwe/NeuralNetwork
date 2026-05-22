@@ -86,7 +86,6 @@ void AppGUI::renderTrainTab() {
                         std::lock_guard<std::mutex> lock(state.gui_mutex);
                         state.raw_data = std::move(loaded_data);
                         state.preprocessor.initialize_from_data(state.raw_data);
-                        state.is_fitted = false;
 
                         state.is_loading_csv = false;
                         //Maybe add status message
@@ -172,14 +171,14 @@ void AppGUI::renderPredictTab() {
                     // Make thread to load model
                     std::thread([this, filepath]() {
                         try {
-                            state.nn.load(filepath);
+                            state.prediction_nn.load(filepath);
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Model loaded: " + filepath;
                         }
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Model Load Error: " + std::string(e.what());
-                            state.nn.clear_layers();
+                            state.prediction_nn.clear_layers();
                         }
                     }).detach();
                 }
@@ -201,15 +200,13 @@ void AppGUI::renderPredictTab() {
 
                     std::thread([this, filepath]() {
                         try {
-                            state.preprocessor.load(filepath);
-                            state.is_fitted = true;
+                            state.prediction_preprocessor.load(filepath);
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Preprocessor config loaded: " + filepath;
                         }
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Config Load Error: " + std::string(e.what());
-                            state.is_fitted = false;
                         }
                         }).detach();
                 }
@@ -221,9 +218,9 @@ void AppGUI::renderPredictTab() {
         //======== Check if datapreprocessor matches neural network ========= <= TO DO
 
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-
+        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "%s", state.predict_status_msg.c_str());
         // --- PREDICT ---
-        bool ready_to_predict = state.is_fitted && !state.nn.get_layers().empty();
+        bool ready_to_predict = state.prediction_preprocessor.is_fitted() && !state.prediction_nn.get_layers().empty();
 
         if (ready_to_predict) {
             show_prediction_form(state);

@@ -73,7 +73,7 @@ void show_preprocessor_settings(AppState& state) {
         ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableSetupColumn("Name");
         ImGui::TableSetupColumn("Type");
-        if (state.is_fitted) {
+        if (state.preprocessor.is_fitted()) {
             ImGui::TableSetupColumn("Mean / Categories");
             ImGui::TableSetupColumn("Std Dev");
         }
@@ -108,7 +108,7 @@ void show_preprocessor_settings(AppState& state) {
                 ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "Categorical");
             }
 
-            if (state.is_fitted) {
+            if (state.preprocessor.is_fitted()) {
                 show_col_statistics(col);
             }
             else {
@@ -121,7 +121,7 @@ void show_preprocessor_settings(AppState& state) {
     ImGui::Spacing();
 
     // ========FIT=TRANSFORM BUTTONS========
-    if (!state.is_fitted) {
+    if (!state.preprocessor.is_fitted()) {
         if (state.is_fitting) {
             ImGui::BeginDisabled();
             ImGui::Button("FITTING THE DATA... PLEASE WAIT", ImVec2(-FLT_MIN, 40));
@@ -135,7 +135,6 @@ void show_preprocessor_settings(AppState& state) {
                     state.preprocessor.fit(state.raw_data);
                     state.is_fitting = false;
                     }).detach();
-                state.is_fitted = true;
             }
         }
     }
@@ -166,7 +165,7 @@ void show_preprocessor_settings(AppState& state) {
     ImGui::InputText("File Path##prep", state.preprocessor_filepath, sizeof(state.preprocessor_filepath));
 
     // Przycisk ZAPISZ
-    if (state.is_fitted)
+    if (state.preprocessor.is_fitted())
     {
         if (ImGui::Button("Save Config")) {
             try {
@@ -186,7 +185,6 @@ void show_preprocessor_settings(AppState& state) {
         try {
             state.preprocessor.load(state.preprocessor_filepath);
             state.preprocessor_status_msg = "Successfully loaded from: " + std::string(state.preprocessor_filepath);
-            state.is_fitted = true;
         }
         catch (const std::exception& e) {
             state.preprocessor_status_msg = std::string("Load error: ") + e.what();
