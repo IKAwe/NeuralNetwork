@@ -104,7 +104,7 @@ void show_architecture_settings(AppState& state) {
             ImGui::TableSetColumnIndex(3);
             ImGui::SetNextItemWidth(-FLT_MIN);
             // Indeks 3 w naszym systemie to "Dropout"
-            if (state.gui_layers[i].type_index == 3) {
+            if (state.gui_layers[i].type_index == static_cast<int>(LayerType::Dropout)) {//To change type index need to be stored as enum class in LayerUI
                 ImGui::SliderFloat("Rate", &state.gui_layers[i].dropout_rate, 0.0f, 1.0f, "%.2f");
             }
             else {
@@ -183,6 +183,7 @@ void show_architecture_settings(AppState& state) {
                     auto layer = LayerMaker::create_by_name(name, i, state.gui_layers[i]);
 
                     if (layer) {
+                        layer->initialize();
                         state.nn.add_layer(std::move(layer));
                     }
                 }
