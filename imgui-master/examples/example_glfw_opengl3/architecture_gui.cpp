@@ -88,7 +88,6 @@ void show_architecture_settings(AppState& state) {
             ImGui::TableSetColumnIndex(2);
             ImGui::SetNextItemWidth(-FLT_MIN);
             if (current_type  == LayerType::Dense) {
-                // ZMIANA: Zablokuj edycjê dla ostatniej warstwy, jeœli wymusza to dataset
                 if (i == state.gui_layers.size() - 1 && state.dataset.has_value()) {
                     ImGui::TextDisabled("%d (Cel)", state.gui_layers[i].outputs);
                 }
@@ -231,46 +230,68 @@ void show_architecture_settings(AppState& state) {
 
     // save button
     if (ImGui::Button("Save Model", ImVec2(120, 0))) {
-        try {
-            state.nn.save(state.network_filepath);
-            state.network_status_msg = "Successfully saved to: " + std::string(state.network_filepath);
-        }
-        catch (const std::exception& e) {
-            state.network_status_msg = std::string("Save error: ") + e.what();
-        }
+        std::string filepath(state.network_filepath);
+
+        state.network_status_msg = "Saving model...";
+        std::thread([&state, filepath]() {
+            try {
+                state.nn.save(filepath);
+
+                // Zaktualizuj stan GUI w sekcji krytycznej
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
+                state.network_status_msg = "Successfully saved to: " + filepath;
+            }
+            catch (const std::exception& e) {
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
+                state.network_status_msg = std::string("Save error: ") + e.what();
+            }
+            }).detach();
     }
 
     ImGui::SameLine();
 
     // load button
     if (ImGui::Button("Load Model", ImVec2(120, 0))) {
-        try {
-            state.nn.load(state.network_filepath);
-            state.gui_layers.clear();
-            const auto& loaded_layers = state.nn.get_layers();
+        std::string filepath(state.network_filepath);
+        state.network_status_msg = "Loading model...";
 
-            for (const auto& layer : loaded_layers) {
-                LayerUI config;
-                std::string name = layer->get_layer_name();
+        std::thread([&state, filepath]() {
+            try {
+                NeuralNetwork temp_nn;
+                temp_nn.load(filepath);
 
-                for (int j = 0; j < (int)state.layer_names.size(); ++j) {
-                    if (std::string(state.layer_names[j]) == name) {
-                        config.type_index = j;
-                        break;
+                std::vector<LayerUI> temp_gui_layers;
+                const auto& loaded_layers = temp_nn.get_layers();
+
+                for (const auto& layer : loaded_layers) {
+                    LayerUI config;
+                    std::string name = layer->get_layer_name();
+
+                    for (int j = 0; j < (int)state.layer_names.size(); ++j) {
+                        if (std::string(state.layer_names[j]) == name) {
+                            config.type_index = j;
+                            break;
+                        }
                     }
+
+                    config.inputs = (int)layer->get_input_nb();
+                    config.outputs = (int)layer->get_output_nb();
+                    temp_gui_layers.push_back(config);
                 }
 
-                config.inputs = (int)layer->get_input_nb();
-                config.outputs = (int)layer->get_output_nb();
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
 
-                state.gui_layers.push_back(config);
+                state.nn = std::move(temp_nn);
+                state.gui_layers = std::move(temp_gui_layers);
+
+                state.is_architecture_locked = true;
+                state.network_status_msg = "Successfully loaded from: " + filepath;
             }
-            state.is_architecture_locked = true;
-            state.network_status_msg = "Successfully loaded from: " + std::string(state.network_filepath);
-        }
-        catch (const std::exception& e) {
-            state.network_status_msg = std::string("Load error: ") + e.what();
-        }
+            catch (const std::exception& e) {
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
+                state.network_status_msg = std::string("Load error: ") + e.what();
+            }
+        }).detach();
     }
 
     if (!state.network_status_msg.empty()) {

@@ -88,11 +88,13 @@ void AppGUI::renderTrainTab() {
                         state.preprocessor.initialize_from_data(state.raw_data);
 
                         state.is_loading_csv = false;
-                        //Maybe add status message
+                        state.csv_file_status_msg = "Csv file loaded: " + filepath;
+
                     }
                     catch (const std::exception& e) {
                         std::lock_guard<std::mutex> lock(state.gui_mutex);
                         state.is_loading_csv = false;
+                        state.csv_file_status_msg = "Csv file Load Error: " + std::string(e.what());
                     }
                     }).detach();
             }
@@ -171,8 +173,12 @@ void AppGUI::renderPredictTab() {
                     // Make thread to load model
                     std::thread([this, filepath]() {
                         try {
-                            state.prediction_nn.load(filepath);
+                            NeuralNetwork temp_nn;
+                            temp_nn.load(filepath);
+
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
+
+                            state.prediction_nn = std::move(temp_nn);
                             state.predict_status_msg = "Model loaded: " + filepath;
                         }
                         catch (const std::exception& e) {
@@ -200,8 +206,11 @@ void AppGUI::renderPredictTab() {
 
                     std::thread([this, filepath]() {
                         try {
-                            state.prediction_preprocessor.load(filepath);
+                            DataPreprocessor temp_dp;
+                            temp_dp.load(filepath);
+
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
+                            state.prediction_preprocessor = std::move(temp_dp);
                             state.predict_status_msg = "Preprocessor config loaded: " + filepath;
                         }
                         catch (const std::exception& e) {
