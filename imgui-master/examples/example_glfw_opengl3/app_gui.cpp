@@ -155,6 +155,7 @@ void AppGUI::renderPredictTab() {
             state.json_files = find_files_by_extension(".json");
             state.selected_model_idx = state.bin_files.empty() ? -1 : 0;
             state.selected_json_idx = state.json_files.empty() ? -1 : 0;
+            std::lock_guard<std::mutex> lock(state.gui_mutex);
             state.predict_status_msg = "Files list refreshed.";
         }
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
@@ -227,7 +228,15 @@ void AppGUI::renderPredictTab() {
         //======== Check if datapreprocessor matches neural network ========= <= TO DO
 
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "%s", state.predict_status_msg.c_str());
+
+        //Local copy of status
+        std::string local_status_msg;
+        {
+            std::lock_guard<std::mutex> lock(state.gui_mutex);
+            local_status_msg = state.predict_status_msg;
+        }
+
+        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "%s", local_status_msg.c_str());
         // --- PREDICT ---
         bool ready_to_predict = state.prediction_preprocessor.is_fitted() && !state.prediction_nn.get_layers().empty();
 

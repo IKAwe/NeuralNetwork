@@ -294,12 +294,19 @@ void show_architecture_settings(AppState& state) {
         }).detach();
     }
 
-    if (!state.network_status_msg.empty()) {
-        if (state.network_status_msg.find("error") != std::string::npos) {
-            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", state.network_status_msg.c_str());
+    //Make local copy of status
+    std::string local_status_msg;
+    {
+        std::lock_guard<std::mutex> lock(state.gui_mutex);
+        local_status_msg = state.network_status_msg;
+    }
+
+    if (!local_status_msg.empty()) {
+        if (local_status_msg.find("error") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", local_status_msg.c_str());
         }
         else {
-            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "%s", state.network_status_msg.c_str());
+            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "%s", local_status_msg.c_str());
         }
     }
 }
