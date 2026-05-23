@@ -7,14 +7,19 @@ void show_prediction_form(AppState& state) {
     ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "Enter data for prediction:");
     ImGui::Spacing();
 
-    const auto& cols = state.preprocessor.get_columns();
+    //predict_num_inputs is map where we store gui inputs for numerical columns - the key is the column index
+    //predict_cat_inputs is map where we store gui inputs for categorical columns - the key is the column index
+
+    //The idea is to store the user input in two maps where the key is the column index, transform accordingly and create one-row input Matrix for prediction
+
+    const auto& cols = state.prediction_preprocessor.get_columns();
     for (const auto& col : cols) {
         if (!col->include_column || col->is_target_column) continue;
 
         ImGui::PushID(static_cast<int>(col->get_index()));
 
         if (auto* num_col = dynamic_cast<NumericalColumn*>(col.get())) {
-            ImGui::InputFloat(col->name.c_str(), &state.predict_num_inputs[col->get_index()]);
+            ImGui::InputFloat(col->name.c_str(), &state.predict_num_inputs[col->get_index()]);//Input changes the value in the map
         }
         else if (auto* cat_col = dynamic_cast<CategoricalColumn*>(col.get())) {
             const auto& categories = cat_col->get_categories();
@@ -51,14 +56,16 @@ void show_prediction_form(AppState& state) {
             Matrix inference_input(1, input_size);
             size_t current_in_idx = 0;
 
+            //Transform all given inputs
             for (const auto& c : cols) {
                 if (!c->include_column || c->is_target_column) continue;
-
+                //Categorical
                 if (auto* cat_col = dynamic_cast<CategoricalColumn*>(c.get())) {
                     int cat_idx = state.predict_cat_inputs[c->get_index()];
                     std::string cat_str = cat_col->get_categories()[cat_idx];
                     inference_input(0, current_in_idx) = c->transform(cat_str);
                 }
+                //Numerical
                 else {
                     float val = state.predict_num_inputs[c->get_index()];
                     inference_input(0, current_in_idx) = c->transform(std::to_string(val));
@@ -66,13 +73,13 @@ void show_prediction_form(AppState& state) {
                 current_in_idx++;
             }
 
-            Matrix output = state.nn.predict(inference_input);
+            Matrix output = state.prediction_nn.predict(inference_input);
 
             // Denormalise the prediction
-            auto denormalized_results = state.preprocessor.inverse_transform_prediction(output);
+            auto denormalized_results = state.prediction_preprocessor.inverse_transform_prediction(output);
 
             state.predict_results.clear();
-            auto target_names = state.preprocessor.get_target_cols_names();
+            auto target_names = state.prediction_preprocessor.get_target_cols_names();
 
             for (size_t out_idx = 0; out_idx < output.get_columns_nb(); ++out_idx) {
                 std::string t_name = (out_idx < target_names.size()) ? target_names[out_idx] : "Output " + std::to_string(out_idx);

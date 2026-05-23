@@ -63,7 +63,7 @@ double NeuralNetwork::test(const Matrix& inputs, const Matrix& targets) {
 }
 
 
-void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std::function<void(EpochStats)> on_epoch_end) {
+void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std::function<bool(EpochStats)> on_epoch_end) {
     if (!loss_function) {
         throw std::runtime_error("NeuralNetwork::train - Loss function was not added");
     }
@@ -72,6 +72,9 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
     const Matrix& inputs = dataset.input_data;
     const Matrix& targets = dataset.output_data;
     size_t total_samples = inputs.get_rows_nb();
+
+    const Matrix& test_inputs = dataset.test_inputs;
+    const Matrix& test_targets = dataset.test_outputs;
     
     if (total_samples == 0) {
         throw std::runtime_error("NeuralNetwork::train - Dataset is empty");
@@ -138,14 +141,34 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
         }
         double epoch_loss = accumulated_loss / batch_count;
 
+        //========== TEST against test set ==============
+
+
         size_t print_interval = (params.epochs >= 10) ? (params.epochs / 10) : 1;
         if (epoch % print_interval == 0 || epoch == params.epochs - 1) {
-            std::cout << "Epoch [" << epoch + 1 << "/" << params.epochs << "] - Loss: " << epoch_loss << std::endl;
+            //Calculate test only 10 times - for now
+            double epoch_test_loss = 0.0;
+            if (test_inputs.get_rows_nb() > 0) {
+                Matrix current_test_data = test_inputs;
+                for (const auto& layer : layers) {
+                    current_test_data = layer->feedforward(current_test_data);
+                }
+                epoch_test_loss = loss_function->calculate(current_test_data, test_targets);
+            }
+
+            std::cout << "Epoch [" << epoch + 1 << "/" << params.epochs << "] - Loss: " << epoch_loss << " | Test Loss: " << epoch_test_loss << std::endl;
+            //Callback
+
+            EpochStats stats(epoch + 1, epoch_loss, epoch_test_loss);
+
+            bool keep_going = on_epoch_end(stats);
+            if (!keep_going) {
+                std::cout << "Training interrupted by user!" << std::endl;
+                break;
+            }
+
         }
-		//Send epoch stats to callback
-        if (on_epoch_end) {
-            on_epoch_end(EpochStats(epoch+1, epoch_loss));
-		}
+
     }
     auto end_time = std::chrono::steady_clock::now();
     auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();

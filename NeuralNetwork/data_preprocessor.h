@@ -76,12 +76,18 @@ struct DatasetMetadata {
 struct Dataset {
 	Matrix input_data;
 	Matrix output_data;
+
+	Matrix test_inputs;
+	Matrix test_outputs;
+
 	DatasetMetadata metadata;
-	Dataset(size_t row_nb, size_t input_col_nb, size_t output_col_nb) : input_data(row_nb, input_col_nb), output_data(row_nb, output_col_nb), metadata(input_col_nb, output_col_nb) {};
+	Dataset(size_t train_row_nb, size_t test_row_nb, size_t input_col_nb, size_t output_col_nb) : input_data(train_row_nb, input_col_nb), output_data(train_row_nb, output_col_nb), 
+		test_inputs(test_row_nb, input_col_nb), test_outputs(test_row_nb, output_col_nb), metadata(input_col_nb, output_col_nb) { };
 };
 
 class DataPreprocessor {
 	std::vector<std::unique_ptr<Column>> columns;
+	bool fitted = false;
 public:
 	/**
 	 * @brief Adds all columns - based on name and index. The function should be called before fit() and transform() functions. Thank to this user will be able to specify which columns should be included, which are the target columns, which are numerical and which are categorical.
@@ -106,7 +112,7 @@ public:
 	 int value - the index of the cathegory based on the number of categories identified in fit().
 	 * @param data The data to be transformed. Can be the same data that was used in fit() or new data with the same structure (same columns in the same order).
 	 */
-	Dataset transform(const StringMatrix& data);
+	Dataset transform(const StringMatrix& data, double test_fraction = 0.2);
 
 	//For prediction interpretation
 	std::vector<std::string> get_target_cols_names() const;
@@ -123,4 +129,6 @@ public:
 	 * @param filename The name of the file to load the preprocessor state from. The file should contain the state of the preprocessor as saved by the save() function.
 	 */
 	void load(const std::string& filename);
+
+	bool is_fitted() { return fitted; };
 };

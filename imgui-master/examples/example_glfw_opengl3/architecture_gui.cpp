@@ -173,9 +173,11 @@ void show_architecture_settings(AppState& state) {
         
     // --- PRZYCISK TRAIN ---
     if (state.is_training) {
-        ImGui::BeginDisabled();
-        ImGui::Button("TRAINING IN PROGRESS... PLEASE WAIT", ImVec2(-FLT_MIN, 40));
-        ImGui::EndDisabled();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+        if (ImGui::Button("STOP TRAINING", ImVec2(-FLT_MIN, 50))) {
+            state.stop_training = true;
+        }
+        ImGui::PopStyleColor();
     }
     
 
@@ -226,22 +228,33 @@ void show_architecture_settings(AppState& state) {
                 //Clear logs from previous trainings only when creating new architecture
                 state.loss_history.clear();
                 state.training_logs.clear();
+                state.test_loss_history.clear();
             }
 
             state.is_architecture_locked = true;
 
             state.nn.set_loss(LossFuncMaker::create_by_name(state.loss_names[state.selected_loss_idx]));
             state.is_training = true;
+            state.stop_training = false;
 
             state.loss_history.reserve(state.loss_history.size()+ state.hyperparams.epochs);
             state.training_logs.reserve(state.training_logs.size() + state.hyperparams.epochs);
+            state.test_loss_history.reserve(state.hyperparams.epochs); //Maybe divide by 10
 
             std::thread([&state]() {
-                std::function<void(EpochStats)> on_epoch_end = [&state](EpochStats stats) {
+                std::function<bool(EpochStats)> on_epoch_end = [&state](EpochStats stats) {
                     std::lock_guard<std::mutex> lock(state.gui_mutex);
                     state.loss_history.push_back(static_cast<float>(stats.loss));
-                    state.training_logs.push_back("Epoch [" + std::to_string(stats.epoch) + "] - Loss: " + std::to_string(stats.loss));
-                    };
+                    state.test_loss_history.push_back(static_cast<float>(stats.test_loss));
+                    state.training_logs.push_back("Epoch [" + std::to_string(stats.epoch) + "] - Loss: " + std::to_string(stats.loss)+ "| Test loss: "+std::to_string(stats.test_loss));
+
+                    //Stop by user
+                    if (state.stop_training) {
+                        state.training_logs.push_back("--- STOPPED BY USER ---");
+                        return false; 
+                    }
+                    return true;
+                 };
                 state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
                 state.is_training = false;
                 }).detach();

@@ -144,6 +144,7 @@ void CategoricalColumn::deserialize(const json& j) {
 // --- DataPreprocessor Implementation ---
 void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
     columns.clear();
+    fitted = false;
 	if (data.get_rows_nb() < 2) return; // Not enough data to determine column types
     for (size_t c = 0; c < data.get_columns_nb(); ++c) {
         std::string name(data(0, c)); // Header
@@ -166,17 +167,25 @@ void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
     }
 }
 void DataPreprocessor::fit(const StringMatrix& data) {
+    fitted = false;
     for (auto& col : columns) {
 		if (col->include_column) col->fit(data);
     }
+    fitted = true;
 }
 
-Dataset DataPreprocessor::transform(const StringMatrix& data) {
-    size_t num_rows = data.get_rows_nb() - 1;
+Dataset DataPreprocessor::transform(const StringMatrix& data, double test_fraction) {
+    if (!fitted) {
+        throw std::logic_error("DataPreprocessor::transform called before fit() or load().");
+    }
+    size_t num_rows = data.get_rows_nb() - 1; //First row is the header
     std::vector<Column*> input_cols;
     std::vector<Column*> output_cols;
     std::vector<int> in_cat_counts;
     std::vector<int> out_cat_counts;
+
+    size_t test_row_nb = static_cast<size_t>(num_rows * test_fraction);
+    size_t train_row_nb = num_rows - test_row_nb;
 
 	// Count how many input and output columns we have based on the is_target_column flag
     for (const auto& col : columns) {
@@ -195,18 +204,27 @@ Dataset DataPreprocessor::transform(const StringMatrix& data) {
         }
     }
 
-	Dataset ds(num_rows, input_cols.size(), output_cols.size());
+	Dataset ds(train_row_nb, test_row_nb, input_cols.size(), output_cols.size());
 
     ds.metadata.input_category_counts = std::move(in_cat_counts);
     ds.metadata.output_category_counts = std::move(out_cat_counts);
 
-    for (size_t r = 1; r < data.get_rows_nb(); ++r) {
+    for (size_t r = 1; r <= train_row_nb; ++r) {
 
         for (size_t i = 0; i < input_cols.size(); ++i) {
             ds.input_data(r - 1, i) = input_cols[i]->transform(data(r, input_cols[i]->get_index()));
         }
         for (size_t o = 0; o < output_cols.size(); ++o) {
             ds.output_data(r - 1, o) = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
+        }
+    }
+    for (size_t r = train_row_nb+1; r <= num_rows; ++r) {
+        size_t test_idx = r - train_row_nb - 1;
+        for (size_t i = 0; i < input_cols.size(); ++i) {
+            ds.test_inputs(test_idx, i) = input_cols[i]->transform(data(r, input_cols[i]->get_index()));
+        }
+        for (size_t o = 0; o < output_cols.size(); ++o) {
+            ds.test_outputs(test_idx, o) = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
         }
     }
 
@@ -226,6 +244,9 @@ std::vector<std::string> DataPreprocessor::get_target_cols_names() const {
 }
 
 std::vector<std::string> DataPreprocessor::inverse_transform_prediction(const Matrix& prediction_row) const {
+    if (!fitted) {
+        throw std::logic_error("DataPreprocessor::inverse_transform_prediction called before fit() or load()");
+    }
     std::vector<std::string> results;
     results.reserve(prediction_row.get_columns_nb());
 
@@ -245,6 +266,9 @@ std::vector<std::string> DataPreprocessor::inverse_transform_prediction(const Ma
 }
 
 void DataPreprocessor::save(const std::string& filename) const {
+    if (!fitted) {
+        throw std::logic_error("DataPreprocessor::save called before fit() or load()");
+    }
     json j;
     j["columns"] = json::array();
 
@@ -269,7 +293,7 @@ void DataPreprocessor::load(const std::string& filename) {
     file >> j;
 
     columns.clear();
-
+    fitted = false;
     for (const auto& col_json : j.at("columns")) {
         std::string type = col_json.at("type").get<std::string>();
         size_t idx = col_json.at("index").get<size_t>();
@@ -289,4 +313,5 @@ void DataPreprocessor::load(const std::string& filename) {
         col->deserialize(col_json);
         columns.push_back(std::move(col));
     }
+    fitted = true;
 }
