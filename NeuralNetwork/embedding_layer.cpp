@@ -17,7 +17,13 @@ TabularEmbeddingLayer::TabularEmbeddingLayer(size_t id, size_t input_cols, const
     }
 }
 
+TabularEmbeddingLayer::TabularEmbeddingLayer(size_t id, size_t input_cols, size_t output_cols)
+    : Layer(id, input_cols, output_cols){}
+
 bool TabularEmbeddingLayer::initialize() {
+    if (embedding_tables.empty()) {
+		throw std::runtime_error("TabularEmbeddingLayer::initialize called but no embedding tables were created.");
+    }
     std::random_device rd;
     std::mt19937 gen(rd());
 
@@ -37,6 +43,10 @@ bool TabularEmbeddingLayer::initialize() {
 }
 
 Matrix TabularEmbeddingLayer::feedforward(const Matrix& inputs) {
+    if(embedding_tables.empty()) {
+        throw std::runtime_error("TabularEmbeddingLayer::feedforward called but no embedding tables were created.");
+	}
+
     size_t batch_size = inputs.get_rows_nb();
     Matrix output(batch_size, this->output_nb);
 
@@ -71,6 +81,9 @@ Matrix TabularEmbeddingLayer::feedforward(const Matrix& inputs) {
  * @return Matrix filled with zeros.
  */
 Matrix TabularEmbeddingLayer::backpropagate(const Matrix& inputs, const Matrix& gradients_from_next_layer) {
+    if (embedding_tables.empty()) {
+        throw std::runtime_error("TabularEmbeddingLayer::backpropagate called but no embedding tables were created.");
+    }
     size_t batch_size = gradients_from_next_layer.get_rows_nb();
 
     Matrix input_gradients(batch_size, this->input_nb);
@@ -117,19 +130,66 @@ void TabularEmbeddingLayer::update_params(double lr, size_t batch_size) {
 }
 
 void TabularEmbeddingLayer::save(std::ostream& out) const {
-    size_t num_tables = embedding_tables.size();
-    out.write(reinterpret_cast<const char*>(&num_tables), sizeof(num_tables));
+    if (embedding_tables.empty()) {
+        throw std::runtime_error("TabularEmbeddingLayer::save method called but no embedding tables were created.");
+    }
+
+    // 1. Save the number of configurations/tables
+    size_t num_configs = configs.size();
+    out.write(reinterpret_cast<const char*>(&num_configs), sizeof(num_configs));
+
+    // 2. Save the details of each EmbeddingConfig
+    for (const auto& conf : configs) {
+        out.write(reinterpret_cast<const char*>(&conf.input_col_index), sizeof(conf.input_col_index));
+        out.write(reinterpret_cast<const char*>(&conf.vocab_size), sizeof(conf.vocab_size));
+        out.write(reinterpret_cast<const char*>(&conf.embed_dim), sizeof(conf.embed_dim));
+    }
+
+    // 3. Save the actual Embedding Matrices
     for (const auto& table : embedding_tables) {
         table.save(out);
     }
 }
 
 void TabularEmbeddingLayer::load(std::istream& in) {
-    size_t num_tables;
-    in.read(reinterpret_cast<char*>(&num_tables), sizeof(num_tables));
-    if (num_tables == embedding_tables.size()) {
-        for (auto& table : embedding_tables) {
-            table.load(in);
+    embedding_tables.clear();
+    embedding_gradients.clear();
+    configs.clear();
+
+    // 1. Read the number of configurations/tables
+    size_t num_configs;
+    in.read(reinterpret_cast<char*>(&num_configs), sizeof(num_configs));
+
+    size_t expected_output_nb = this->input_nb;
+
+    // 2. Read the EmbeddingConfig details
+    for (size_t i = 0; i < num_configs; ++i) {
+        EmbeddingConfig conf;
+        in.read(reinterpret_cast<char*>(&conf.input_col_index), sizeof(conf.input_col_index));
+        in.read(reinterpret_cast<char*>(&conf.vocab_size), sizeof(conf.vocab_size));
+        in.read(reinterpret_cast<char*>(&conf.embed_dim), sizeof(conf.embed_dim));
+
+        configs.push_back(conf);
+        expected_output_nb += (conf.embed_dim - 1);
+    }
+
+    // 3. Read the Embedding Matrices
+    for (size_t i = 0; i < num_configs; ++i) {
+        Matrix table(0, 0); // Dimensions will be overwritten by table.load()
+        table.load(in);
+
+        // Sanity Check: Ensure the loaded matrix matches the config
+        if (table.get_rows_nb() != configs[i].vocab_size || table.get_columns_nb() != configs[i].embed_dim) {
+            throw std::runtime_error("TabularEmbeddingLayer::load - Matrix dimensions do not match config.");
         }
+
+        embedding_tables.push_back(table);
+        // Initialize an empty gradient matrix of the exact same size
+        embedding_gradients.push_back(Matrix(table.get_rows_nb(), table.get_columns_nb()));
+    }
+
+    // 4. Validate total dimensions
+    if (this->output_nb != expected_output_nb) {
+        throw std::runtime_error("TabularEmbeddingLayer::load - Calculated output dimension mismatch.");
     }
 }

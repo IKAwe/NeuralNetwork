@@ -203,6 +203,13 @@ void AppGUI::renderPredictTab() {
                             state.prediction_preprocessor.load(filepath);
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.predict_status_msg = "Preprocessor config loaded: " + filepath;
+                            //Initialize input maps based on loaded config (only for numerical)
+                            auto& cols = state.prediction_preprocessor.get_columns();
+                            for (const auto& col : cols) {
+                                if (auto* num_col = dynamic_cast<NumericalColumn*>(col.get())) {
+                                    state.predict_num_inputs[col->get_index()] = num_col->get_mean();
+                                }
+                            }
                         }
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);

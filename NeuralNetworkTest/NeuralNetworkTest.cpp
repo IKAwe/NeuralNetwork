@@ -357,6 +357,74 @@ namespace NeuralNetworkTest
             Assert::AreEqual(0.0, input_gradients(0, 0), 0.0001, L"Embedding gradient should be 0");
             Assert::AreEqual(0.0, input_gradients(0, 1), 0.0001, L"Embedding gradient should be 0");
         }
+        TEST_METHOD(TestSerialization_SaveAndLoad)
+        {
+            // 1. Definiujemy konfiguracjê dla dwóch kolumn kategorycznych
+            std::vector<EmbeddingConfig> configs = {
+                {0, 5, 3}, // Kolumna 0: 5 unikalnych wartoœci, wymiar = 3
+                {2, 10, 4} // Kolumna 2: 10 unikalnych wartoœci, wymiar = 4
+            };
+
+            // 2. Tworzymy ORYGINALN¥ warstwê
+            // Wejœcia: 3 kolumny, Wyjœcia: 3 + (3-1) + (4-1) = 8
+            TabularEmbeddingLayer original_layer(1, 3, configs);
+            original_layer.initialize(); // Nape³nia losowymi wagami
+
+            // Tworzymy dane testowe
+            Matrix test_inputs(2, 3);
+            test_inputs(0, 0) = 2.0;
+            test_inputs(0, 1) = 0.5;
+            test_inputs(0, 2) = 7.0;
+
+            test_inputs(1, 0) = 4.0;
+            test_inputs(1, 1) = 0.9;
+            test_inputs(1, 2) = 1.0;
+
+            // Przepuszczamy sygna³ i zapisujemy wynik
+            Matrix original_output = original_layer.feedforward(test_inputs);
+
+            // 3. Zapisujemy warstwê do pliku
+            std::string test_filename = "test_embedding_layer.bin";
+            {
+                std::ofstream out(test_filename, std::ios::binary);
+                Assert::IsTrue(out.is_open(), L"Nie udalo sie utworzyc pliku testowego!");
+                original_layer.save(out);
+            }
+
+            // 4. Tworzymy NOW¥, pust¹ warstwê (szkielet z LayerMakera)
+            TabularEmbeddingLayer loaded_layer(1, 3, 8);
+
+            // 5. £adujemy wagi z pliku
+            {
+                std::ifstream in(test_filename, std::ios::binary);
+                Assert::IsTrue(in.is_open(), L"Nie udalo sie otworzyc pliku testowego do odczytu!");
+                loaded_layer.load(in);
+            }
+
+            // 6. Przepuszczamy TE SAME dane
+            Matrix loaded_output = loaded_layer.feedforward(test_inputs);
+
+            // 7. Weryfikacja Asercjami (Assert)
+            Assert::AreEqual(original_output.get_rows_nb(), loaded_output.get_rows_nb(), L"Niezgodna liczba wierszy (Batch Size)");
+            Assert::AreEqual(original_output.get_columns_nb(), loaded_output.get_columns_nb(), L"Niezgodna liczba kolumn wyjsciowych");
+
+            // Sprawdzamy zawartoœæ macierzy (z tolerancj¹ na b³êdy zmiennoprzecinkowe)
+            for (size_t r = 0; r < original_output.get_rows_nb(); ++r) {
+                for (size_t c = 0; c < original_output.get_columns_nb(); ++c) {
+
+                    double diff = std::abs(original_output(r, c) - loaded_output(r, c));
+
+                    // Wiadomoœæ b³êdu w razie pomy³ki
+                    std::wstring error_msg = L"Blad na pozycji (" + std::to_wstring(r) + L", " + std::to_wstring(c) + L")";
+
+                    // Tolerancja 1e-9 (bardzo ostra)
+                    Assert::IsTrue(diff < 1e-9, error_msg.c_str());
+                }
+            }
+
+            // Opcjonalnie: Czyszczenie (usuniêcie pliku testowego z dysku po udanym teœcie)
+            std::remove(test_filename.c_str());
+        }
     };
 
     TEST_CLASS(NeuralNetworkTest) {

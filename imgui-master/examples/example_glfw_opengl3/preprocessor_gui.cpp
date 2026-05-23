@@ -157,7 +157,7 @@ void show_preprocessor_settings(AppState& state) {
                     for (size_t i = 0; i < in_cat_counts.size(); ++i) {
                         int vocab = in_cat_counts[i];
                         if (vocab > 0) {
-                            size_t embed_dim = std::max((size_t)1, std::min((size_t)50, (size_t)(vocab*2.0/3.0)));
+                            size_t embed_dim = std::max((size_t)1, std::min((size_t)50, (size_t)(vocab)/2)); //EMBEDDING DIMENSION
                             state.embed_configs.push_back({ i, (size_t)vocab, embed_dim });
                         }
                     }
