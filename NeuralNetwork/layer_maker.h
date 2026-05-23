@@ -5,8 +5,9 @@
 #include <memory>
 #include "layers.h"
 #include "activation_functions.h"
+#include "embedding_layer.h"
 
-enum class LayerType { Dense, ReLU, Sigmoid, Dropout };
+enum class LayerType { Dense, ReLU, Sigmoid, Dropout, TabularEmbedding };
 
 struct LayerUI {
     int type_index = 0; 
@@ -23,6 +24,7 @@ public:
         {"Dense", LayerType::Dense},
        {"ReLU", LayerType::ReLU},
         {"Sigmoid", LayerType::Sigmoid},
+		{"TabularEmbedding", LayerType::TabularEmbedding}
         //{"Dropout", LayerType::Dropout}
     };
 
@@ -41,6 +43,7 @@ public:
         case LayerType::Dense:   return std::make_unique<Dense>(id, config.inputs, config.outputs);
         case LayerType::ReLU:    return std::make_unique<ReLU>(id, config.inputs);
         case LayerType::Sigmoid: return std::make_unique<Sigmoid>(id, config.inputs);
+        case LayerType::TabularEmbedding: return std::make_unique<TabularEmbeddingLayer>(id, config.inputs, config.outputs);
         //case LayerType::Dropout: return std::make_unique<Dropout>(id, in, rate);
         default: return nullptr;
         }

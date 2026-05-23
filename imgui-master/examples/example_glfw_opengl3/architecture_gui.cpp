@@ -214,6 +214,7 @@ void show_architecture_settings(AppState& state) {
                     );
 
                     current_in_dim = embed_layer->get_output_nb();
+                    embed_layer->initialize(); // Initialize embedding layer before adding to the network
                     state.nn.add_layer(std::move(embed_layer));
                 }
                 //--- ADD REST OF THE LAYERS ---

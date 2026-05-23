@@ -18,7 +18,8 @@ private:
     std::vector<Matrix> embedding_gradients;
 
 public:
-    TabularEmbeddingLayer(size_t id, size_t input_cols, const std::vector<EmbeddingConfig>& confs);
+	TabularEmbeddingLayer(size_t id, size_t input_cols, const std::vector<EmbeddingConfig>& confs); //Initialize with configs
+	TabularEmbeddingLayer(size_t id, size_t input_cols, size_t output_cols);//Initialize without configs, for loading a model
 
     Matrix feedforward(const Matrix& inputs) override;
     Matrix backpropagate(const Matrix& inputs, const Matrix& gradients_from_next_layer) override;
