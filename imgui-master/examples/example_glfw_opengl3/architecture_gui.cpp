@@ -221,8 +221,8 @@ void show_architecture_settings(AppState& state) {
                 for (size_t i = 0; i < state.gui_layers.size(); ++i) {
                     std::string name = state.layer_names[state.gui_layers[i].type_index];
                     auto layer = LayerMaker::create_by_name(name, i, state.gui_layers[i]);
-
                     if (layer) {
+                        layer->initialize();
                         state.nn.add_layer(std::move(layer));
                     }
                 }
