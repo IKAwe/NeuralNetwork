@@ -216,7 +216,13 @@ void show_architecture_settings(AppState& state) {
                     }
                     return true;
                  };
-                state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
+                try{
+                    state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
+                }
+                catch (const std::exception& e) {
+                    std::lock_guard<std::mutex> lock(state.gui_mutex);
+                    state.training_logs.push_back(std::string("Training error: ") + e.what());
+                }
                 state.is_training = false;
                 }).detach();
         }

@@ -210,8 +210,16 @@ void AppGUI::renderPredictTab() {
                             DataPreprocessor temp_dp;
                             temp_dp.load(filepath);
 
+                            std::map<size_t, float> temp_predict_num_inputs;
+                            auto& cols = temp_dp.get_columns();
+                            for (const auto& col : cols) {
+                                if (auto* num_col = dynamic_cast<NumericalColumn*>(col.get())) {
+                                    temp_predict_num_inputs[col->get_index()] = num_col->get_mean();
+                                }
+                            }
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
                             state.prediction_preprocessor = std::move(temp_dp);
+                            state.predict_num_inputs = std::move(temp_predict_num_inputs);
                             state.predict_status_msg = "Preprocessor config loaded: " + filepath;
                         }
                         catch (const std::exception& e) {
