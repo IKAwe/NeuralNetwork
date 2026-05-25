@@ -129,7 +129,7 @@ void show_architecture_settings(AppState& state) {
             ImGui::TableSetColumnIndex(3);
             ImGui::SetNextItemWidth(-FLT_MIN);
             // Indeks 3 w naszym systemie to "Dropout"
-            if (state.gui_layers[i].type_index == 3) {
+            if (state.gui_layers[i].type_index == static_cast<int>(LayerType::Dropout)) {//To change type index need to be stored as enum class in LayerUI
                 ImGui::SliderFloat("Rate", &state.gui_layers[i].dropout_rate, 0.0f, 1.0f, "%.2f");
             }
             else {
@@ -256,7 +256,13 @@ void show_architecture_settings(AppState& state) {
                     }
                     return true;
                  };
-                state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
+                try{
+                    state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
+                }
+                catch (const std::exception& e) {
+                    std::lock_guard<std::mutex> lock(state.gui_mutex);
+                    state.training_logs.push_back(std::string("Training error: ") + e.what());
+                }
                 state.is_training = false;
                 }).detach();
         }
@@ -270,27 +276,42 @@ void show_architecture_settings(AppState& state) {
 
     // save button
     if (ImGui::Button("Save Model", ImVec2(120, 0))) {
-        try {
-            state.nn.save(state.network_filepath);
-            state.network_status_msg = "Successfully saved to: " + std::string(state.network_filepath);
-        }
-        catch (const std::exception& e) {
-            state.network_status_msg = std::string("Save error: ") + e.what();
-        }
+        std::string filepath(state.network_filepath);
+
+        state.network_status_msg = "Saving model...";
+        std::thread([&state, filepath]() {
+            try {
+                state.nn.save(filepath);
+
+                // Zaktualizuj stan GUI w sekcji krytycznej
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
+                state.network_status_msg = "Successfully saved to: " + filepath;
+            }
+            catch (const std::exception& e) {
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
+                state.network_status_msg = std::string("Save error: ") + e.what();
+            }
+            }).detach();
     }
 
     ImGui::SameLine();
 
     // load button
     if (ImGui::Button("Load Model", ImVec2(120, 0))) {
-        try {
-            state.nn.load(state.network_filepath);
-            state.gui_layers.clear();
-            const auto& loaded_layers = state.nn.get_layers();
+        std::string filepath(state.network_filepath);
+        state.network_status_msg = "Loading model...";
 
-            for (const auto& layer : loaded_layers) {
-                LayerUI config;
-                std::string name = layer->get_layer_name();
+        std::thread([&state, filepath]() {
+            try {
+                NeuralNetwork temp_nn;
+                temp_nn.load(filepath);
+
+                std::vector<LayerUI> temp_gui_layers;
+                const auto& loaded_layers = temp_nn.get_layers();
+
+                for (const auto& layer : loaded_layers) {
+                    LayerUI config;
+                    std::string name = layer->get_layer_name();
 
                 if (name == "TabularEmbedding") continue; //skip embedding
 
@@ -301,25 +322,39 @@ void show_architecture_settings(AppState& state) {
                     }
                 }
 
-                config.inputs = (int)layer->get_input_nb();
-                config.outputs = (int)layer->get_output_nb();
+                    config.inputs = (int)layer->get_input_nb();
+                    config.outputs = (int)layer->get_output_nb();
+                    temp_gui_layers.push_back(config);
+                }
 
-                state.gui_layers.push_back(config);
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
+
+                state.nn = std::move(temp_nn);
+                state.gui_layers = std::move(temp_gui_layers);
+
+                state.is_architecture_locked = true;
+                state.network_status_msg = "Successfully loaded from: " + filepath;
             }
-            state.is_architecture_locked = true;
-            state.network_status_msg = "Successfully loaded from: " + std::string(state.network_filepath);
-        }
-        catch (const std::exception& e) {
-            state.network_status_msg = std::string("Load error: ") + e.what();
-        }
+            catch (const std::exception& e) {
+                std::lock_guard<std::mutex> lock(state.gui_mutex);
+                state.network_status_msg = std::string("Load error: ") + e.what();
+            }
+        }).detach();
     }
 
-    if (!state.network_status_msg.empty()) {
-        if (state.network_status_msg.find("error") != std::string::npos) {
-            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", state.network_status_msg.c_str());
+    //Make local copy of status
+    std::string local_status_msg;
+    {
+        std::lock_guard<std::mutex> lock(state.gui_mutex);
+        local_status_msg = state.network_status_msg;
+    }
+
+    if (!local_status_msg.empty()) {
+        if (local_status_msg.find("error") != std::string::npos) {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", local_status_msg.c_str());
         }
         else {
-            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "%s", state.network_status_msg.c_str());
+            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "%s", local_status_msg.c_str());
         }
     }
 }

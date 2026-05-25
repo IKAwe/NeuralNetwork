@@ -150,6 +150,7 @@ void show_preprocessor_settings(AppState& state) {
 
                 std::thread([&state]() {
                     auto result = state.preprocessor.transform(state.raw_data);
+                    std::lock_guard<std::mutex> lock(state.gui_mutex);
                     state.dataset = std::move(result);
                     //==Make embedding configs for each categorical column=====
                     state.embed_configs.clear();

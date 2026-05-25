@@ -144,7 +144,7 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
         //========== TEST against test set ==============
 
 
-        size_t print_interval = (params.epochs >= 10) ? (params.epochs / 10) : 1;
+        size_t print_interval = (params.epochs >= 10) ? (params.epochs / 20) : 1;
         if (epoch % print_interval == 0 || epoch == params.epochs - 1) {
             //Calculate test only 10 times - for now
             double epoch_test_loss = 0.0;

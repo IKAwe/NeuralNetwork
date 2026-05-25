@@ -7,7 +7,7 @@
 #include "activation_functions.h"
 #include "embedding_layer.h"
 
-enum class LayerType { Dense, ReLU, Sigmoid, Dropout, TabularEmbedding };
+enum class LayerType { Dense, ReLU, Sigmoid, Dropout, TabularEmbedding, Tanh, LeakyReLU };
 
 struct LayerUI {
     int type_index = 0; 
@@ -24,7 +24,9 @@ public:
         {"Dense", LayerType::Dense},
        {"ReLU", LayerType::ReLU},
         {"Sigmoid", LayerType::Sigmoid},
-		{"TabularEmbedding", LayerType::TabularEmbedding}
+		{"TabularEmbedding", LayerType::TabularEmbedding},
+        {"Tanh", LayerType::Tanh},
+		{"LeakyReLU", LayerType::LeakyReLU}
         //{"Dropout", LayerType::Dropout}
     };
 
@@ -43,6 +45,8 @@ public:
         case LayerType::Dense:   return std::make_unique<Dense>(id, config.inputs, config.outputs);
         case LayerType::ReLU:    return std::make_unique<ReLU>(id, config.inputs);
         case LayerType::Sigmoid: return std::make_unique<Sigmoid>(id, config.inputs);
+		case LayerType::Tanh:    return std::make_unique<Tanh>(id, config.inputs);
+		case LayerType::LeakyReLU:return std::make_unique<LeakyReLU>(id, config.inputs, 0.01);
         case LayerType::TabularEmbedding: return std::make_unique<TabularEmbeddingLayer>(id, config.inputs, config.outputs);
         //case LayerType::Dropout: return std::make_unique<Dropout>(id, in, rate);
         default: return nullptr;

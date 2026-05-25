@@ -88,11 +88,13 @@ void AppGUI::renderTrainTab() {
                         state.preprocessor.initialize_from_data(state.raw_data);
 
                         state.is_loading_csv = false;
-                        //Maybe add status message
+                        state.csv_file_status_msg = "Csv file loaded: " + filepath;
+
                     }
                     catch (const std::exception& e) {
                         std::lock_guard<std::mutex> lock(state.gui_mutex);
                         state.is_loading_csv = false;
+                        state.csv_file_status_msg = "Csv file Load Error: " + std::string(e.what());
                     }
                     }).detach();
             }
@@ -153,6 +155,7 @@ void AppGUI::renderPredictTab() {
             state.json_files = find_files_by_extension(".json");
             state.selected_model_idx = state.bin_files.empty() ? -1 : 0;
             state.selected_json_idx = state.json_files.empty() ? -1 : 0;
+            std::lock_guard<std::mutex> lock(state.gui_mutex);
             state.predict_status_msg = "Files list refreshed.";
         }
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
@@ -171,8 +174,12 @@ void AppGUI::renderPredictTab() {
                     // Make thread to load model
                     std::thread([this, filepath]() {
                         try {
-                            state.prediction_nn.load(filepath);
+                            NeuralNetwork temp_nn;
+                            temp_nn.load(filepath);
+
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
+
+                            state.prediction_nn = std::move(temp_nn);
                             state.predict_status_msg = "Model loaded: " + filepath;
                         }
                         catch (const std::exception& e) {
@@ -200,16 +207,21 @@ void AppGUI::renderPredictTab() {
 
                     std::thread([this, filepath]() {
                         try {
-                            state.prediction_preprocessor.load(filepath);
-                            std::lock_guard<std::mutex> lock(state.gui_mutex);
-                            state.predict_status_msg = "Preprocessor config loaded: " + filepath;
+                            DataPreprocessor temp_dp;
+                            temp_dp.load(filepath);
+
+                            std::map<size_t, float> temp_predict_num_inputs;
+                            auto& cols = temp_dp.get_columns();
                             //Initialize input maps based on loaded config (only for numerical)
-                            auto& cols = state.prediction_preprocessor.get_columns();
                             for (const auto& col : cols) {
                                 if (auto* num_col = dynamic_cast<NumericalColumn*>(col.get())) {
-                                    state.predict_num_inputs[col->get_index()] = num_col->get_mean();
+                                    temp_predict_num_inputs[col->get_index()] = num_col->get_mean();
                                 }
                             }
+                            std::lock_guard<std::mutex> lock(state.gui_mutex);
+                            state.prediction_preprocessor = std::move(temp_dp);
+                            state.predict_num_inputs = std::move(temp_predict_num_inputs);
+                            state.predict_status_msg = "Preprocessor config loaded: " + filepath;
                         }
                         catch (const std::exception& e) {
                             std::lock_guard<std::mutex> lock(state.gui_mutex);
@@ -225,7 +237,15 @@ void AppGUI::renderPredictTab() {
         //======== Check if datapreprocessor matches neural network ========= <= TO DO
 
         ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "%s", state.predict_status_msg.c_str());
+
+        //Local copy of status
+        std::string local_status_msg;
+        {
+            std::lock_guard<std::mutex> lock(state.gui_mutex);
+            local_status_msg = state.predict_status_msg;
+        }
+
+        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "%s", local_status_msg.c_str());
         // --- PREDICT ---
         bool ready_to_predict = state.prediction_preprocessor.is_fitted() && !state.prediction_nn.get_layers().empty();
 
