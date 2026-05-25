@@ -115,6 +115,9 @@ double CategoricalColumn::transform(const std::string_view cell) {
 
 	// Check if the category was found and return its index as a double. If not found, return -1.0.
     if (it != categories.end() && *it == cell) {
+        if (scale_by_count) {
+            return static_cast<double>(std::distance(categories.begin(), it)) / categories.size();
+		}
         return static_cast<double>(std::distance(categories.begin(), it));
     }
 
@@ -122,6 +125,9 @@ double CategoricalColumn::transform(const std::string_view cell) {
 }
 
 std::string CategoricalColumn::inverse_transform(double val) const {
+    if (scale_by_count) {
+        val = val * categories.size();
+	}
     int idx = static_cast<int>(std::round(val));
     if (idx >= 0 && idx < categories.size()) {
         return categories[idx];
@@ -133,11 +139,13 @@ json CategoricalColumn::serialize() const {
     json j = Column::serialize();
 	j["type"] = "Categorical";
     j["categories"] = categories;
+    j["scale_by_count"] = scale_by_count;
     return j;
 }
 void CategoricalColumn::deserialize(const json& j) {
     Column::deserialize(j);
     categories = j.at("categories").get<std::vector<std::string>>();
+	scale_by_count = j.at("scale_by_count").get<bool>();
 }
 
 
