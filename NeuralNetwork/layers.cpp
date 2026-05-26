@@ -4,6 +4,10 @@
 Dense::Dense(size_t id, size_t in_dim, size_t out_dim)
     : Layer(id, in_dim, out_dim), weights(in_dim, out_dim), bias(1, out_dim), accumulated_gradients(in_dim, out_dim), accumulated_bias_gradients(1, out_dim) {}
 
+/**
+ * @brief Initializes weights and biases of the layer using the specified initialization method (He or Xavier).
+ * @return True if initialization is successful, false otherwise.
+ */
 bool Dense::initialize() {
     std::random_device rd;
     std::mt19937 generator(rd());
@@ -33,7 +37,11 @@ bool Dense::initialize() {
     }
     return true;
 }
-
+/**
+ * @brief Feedforward pass for the dense layer. It computes the output as Y = X * W + B, where X is the input matrix, W are the weights, and B are the biases.
+ * @param inputs The input matrix to the layer, with dimensions (batch_size x input_dim).
+ * @return The output matrix of the layer, with dimensions (batch_size x output_dim).
+ */
 Matrix Dense::feedforward(const Matrix& inputs) {
     // Y= X * W + B
     Matrix output = inputs * weights;
@@ -47,7 +55,12 @@ Matrix Dense::feedforward(const Matrix& inputs) {
     }
     return output;
 }
-
+/**
+ * @brief Applies backpropagation for the dense layer. It calculates the gradients with respect to weights and biases, accumulates them, and returns the gradients with respect to the inputs for the previous layer.
+ * @param inputs the input matrix that was fed into the layer during the feedforward pass, with dimensions (batch_size x input_dim).
+ * @param gradients_from_next_layer The gradients received from the next layer in the network, with dimensions (batch_size x output_dim).
+ * @return The gradients with respect to the inputs of this layer, which will be passed to the previous layer during backpropagation, with dimensions (batch_size x input_dim).
+ */
 Matrix Dense::backpropagate(const Matrix& inputs, const Matrix& gradients_from_next_layer) {
     // Calculate gradients(dL/dw)
     Matrix inputs_T = inputs.transpose();
@@ -70,6 +83,10 @@ Matrix Dense::backpropagate(const Matrix& inputs, const Matrix& gradients_from_n
 }
 
 //Update parameters - we assume that Loss funciton already divided gradients by batch size.
+/**@brief Updates the weights and biases of the dense layer using the accumulated gradients and the specified learning rate. After updating, it resets the accumulated gradients to zero for the next batch.
+ * @param lr The learning rate to be used for updating the parameters.
+ * @param batch_size The size of the batch that was used to accumulate the gradients (not used in this implementation since we assume gradients are already averaged).
+**/
 void Dense::update_params(double lr, size_t batch_size) {
     weights = weights - (accumulated_gradients * lr);
     bias = bias - (accumulated_bias_gradients * lr);

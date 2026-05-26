@@ -21,10 +21,6 @@ public:
 		buffer.reserve(r * c * 10); // Assuming average cell length of 10 characters, adjust as needed
 	};
 	StringMatrix() = default;
-	/**
- * @brief Add a string_view cell to cells vector. The string_view should point to a valid string in the buffer vector.
- * @param cell string_view to be added to cells vector.
- */
 	void add_cell(std::string_view cell) {
 		cells.push_back(cell);
 	};
@@ -43,10 +39,6 @@ public:
 	void reserve_cells(size_t number_of_cells) {
 		cells.reserve(number_of_cells);
 	};
-	/**
- * @brief
- * @return A reference to the buffer vector.
- */
 	std::vector<char>& get_buffer() { return buffer; };
 
 	/**
@@ -166,6 +158,11 @@ public:
 	void zero() {
 		std::fill(data.begin(), data.end(), 0.0);
 	}
+	/**
+	 * @brief Used when we want to change the number of rows or columns in the matrix. It updates the rows_nb and col_nb member variables and resizes the data vector to accommodate the new size. The new elements in the data vector are initialized to 0.0. This method is useful when we need to adjust the dimensions of the matrix after it has been created, for example, when we want to extract a subset of rows or columns from a larger matrix.
+	 * @param new_rows The new number of rows for the matrix.
+	 * @param new_cols The new number of columns for the matrix.
+	 */
 	void resize(size_t new_rows, size_t new_cols) {
 		rows_nb = new_rows;
 		col_nb = new_cols;
@@ -186,7 +183,12 @@ public:
 	 std::vector<double>& get_data_mutable() {
 		 return data;
 	 }
-
+	 /**
+	  * @brief It overwrites the current matrix with the rows from the source matrix, starting from start_row and ending at end_row (exclusive). The number of columns in the current matrix will be set to match the source matrix. The data vector will be resized to accommodate the new number of rows and columns, and the relevant data from the source matrix will be copied into it. It is useful for extracting a subset of rows from a larger matrix.
+	  * @param source The source matrix from which rows will be copied.
+	  * @param start_row The starting row index in the source matrix (inclusive).
+	  * @param end_row The ending row index in the source matrix (exclusive).
+	  */
 	 void overwrite_with_rows(const Matrix& source, size_t start_row, size_t end_row) {
 
 		 size_t new_rows = end_row - start_row;

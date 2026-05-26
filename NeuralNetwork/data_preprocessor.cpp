@@ -57,7 +57,11 @@ double NumericalColumn::transform(const std::string_view cell) {
     std::from_chars(cell.data(), cell.data() + cell.size(), val);
     return std::clamp((val - mean) / std_dev, -5.0, 5.0);
 }
-
+/**
+ * @brief Inverse transform a normalized value back to the original scale using the mean and standard deviation calculated in the fit() function.
+ * @param val The normalized value to be inverse transformed.
+ * @return The original value as a string.
+ */
 std::string NumericalColumn::inverse_transform(const double val) const {
     double original = (val * std_dev) + mean;
     return std::to_string(original);
@@ -78,7 +82,10 @@ void NumericalColumn::deserialize(const json& j){
 
 // --- CategoricalColumn Implementation ---
 
-
+/**
+ * @brief Collect information about the unique categories in the column. This is done by iterating through the column values, collecting them into a vector of string_views, sorting the vector to bring duplicates together, and then using std::unique to remove duplicates. The unique categories are then stored in the "categories" member variable for later use in the transform() function.
+ * @param data The data to fit the preprocessor on. The function assumes that the first row of the data contains column headers and starts processing from the second row. The function also assumes that the column values are strings and does not perform any type checking or conversion.
+ */
 void CategoricalColumn::fit(const StringMatrix& data) {
 	// Get all values as string_views to avoid unnecessary string constructions
     std::vector<std::string_view> raw_views;
@@ -104,7 +111,11 @@ void CategoricalColumn::fit(const StringMatrix& data) {
         categories.emplace_back(v);
     }
 }
-
+/**
+ * @brief Transform a cell value by finding its index in the categories vector. If the scale flag is set, the index is scaled to be between 0 and 1 based on the number of categories. If the category is not found in the categories vector, -1.0 is returned to indicate an unknown category.
+ * @param cell The cell value to be transformed.
+ * @return The transformed value as a double.
+ */
 double CategoricalColumn::transform(const std::string_view cell) {
 	//Since categories are sorted, we can use binary search to find the index of the category
     auto it = std::lower_bound(categories.begin(), categories.end(), cell);
@@ -121,7 +132,11 @@ double CategoricalColumn::transform(const std::string_view cell) {
 
     return -1.0;
 }
-
+/**
+ * @brief Transform a normalized value back to the original category string. If the scale flag is set, the value is first denormalized to get the category index. If the index is out of bounds, "UNKNOWN_CATEGORY" is returned to indicate an unknown category.
+ * @param val The normalized value to be inverse transformed.
+ * @return The original category string.
+ */
 std::string CategoricalColumn::inverse_transform(double val) const {
     //Denormalise according to flag (we assume that range -0.5 to 0 is corresponding to 0th category)
     if (scale) {
@@ -155,6 +170,11 @@ void CategoricalColumn::deserialize(const json& j) {
 
 
 // --- DataPreprocessor Implementation ---
+
+/**
+* @brief Adds all columns - based on name and index. The function should be called before fit() and transform() functions. Thank to this user will be able to specify which columns should be included, which are the target columns, which are numerical and which are categorical.
+* @param data The data to initialize the preprocessor from. The function assumes that the first row of the data contains column headers and starts processing from the second row. The type of each column is determined based on the value in the second row - if it can be converted to a double, it is considered numerical, otherwise it is considered categorical.
+*/
 void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
     columns.clear();
     fitted = false;
@@ -179,6 +199,11 @@ void DataPreprocessor::initialize_from_data(const StringMatrix& data) {
         }
     }
 }
+/**
+ * @brief Collect information from the data to be able to transform it later. For numerical columns - calculating the mean and standard deviation,
+ for categorical columns - identifying the unique categories. This function should be called before transform() and should be called only once for a given dataset.
+ * @param data The data to fit the preprocessor on.
+ */
 void DataPreprocessor::fit(const StringMatrix& data) {
     fitted = false;
     for (auto& col : columns) {
@@ -186,7 +211,12 @@ void DataPreprocessor::fit(const StringMatrix& data) {
     }
     fitted = true;
 }
-
+/**
+ * @brief Transform the input data into two matrices - one for input features and one for output labels. The transformation is done based on the information collected in the fit() function.
+ For numerical columns, the data is normalized using the mean and standard deviation calculated in fit(). For categorical columns, the data is transformed into
+  value - the index of the cathegory based on the number of categories identified in fit() or scaled between -1 and 1 if the scale flag is set in Category class.
+ * @param data The data to be transformed. Can be the same data that was used in fit() or new data with the same structure (same columns in the same order).
+ */
 Dataset DataPreprocessor::transform(const StringMatrix& data, double test_fraction) {
     if (!fitted) {
         throw std::logic_error("DataPreprocessor::transform called before fit() or load().");
@@ -255,7 +285,11 @@ std::vector<std::string> DataPreprocessor::get_target_cols_names() const {
     }
     return names;
 }
-
+/**
+ * @brief Get the original string values of the predicted output based on the transformed prediction row. This is done by applying the inverse_transform function of each target column to the corresponding value in the prediction row. The order of the values in the prediction row should correspond to the order of the target columns in the columns vector. This function is useful for interpreting the predictions made by the model in terms of the original data.
+ * @param prediction_row The row of predictions to be inverse transformed. It should have the same number of columns as the number of target columns in the preprocessor. Each value in the row is expected to be a transformed value that can be inverse transformed using the corresponding target column's inverse_transform function.
+ * @return The original string values of the predicted output. The order of the values in the returned vector corresponds to the order of the target columns in the columns vector.
+ */
 std::vector<std::string> DataPreprocessor::inverse_transform_prediction(const Matrix& prediction_row) const {
     if (!fitted) {
         throw std::logic_error("DataPreprocessor::inverse_transform_prediction called before fit() or load()");
@@ -277,7 +311,12 @@ std::vector<std::string> DataPreprocessor::inverse_transform_prediction(const Ma
     }
     return results;
 }
-
+/**
+ * @brief Save the preprocessor state to a file. More precisely "columns" vector is saved - hence for numerical columns, mean and std_dev are saved,
+ and for categorical columns, the list of categories is saved. This allows the preprocessor to be reloaded later and used to transform
+ new data in the same way as the original data.
+ * @param filename The name of the file to save the preprocessor state to.
+ */
 void DataPreprocessor::save(const std::string& filename) const {
     if (!fitted) {
         throw std::logic_error("DataPreprocessor::save called before fit() or load()");
@@ -295,7 +334,10 @@ void DataPreprocessor::save(const std::string& filename) const {
     }
     file << j.dump(4);
 }
-
+/**
+ * @brief Load the preprocessor state from a file. This should be used to load a preprocessor that was previously saved using the save() function.
+ * @param filename The name of the file to load the preprocessor state from. The file should contain the state of the preprocessor as saved by the save() function.
+ */
 void DataPreprocessor::load(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {

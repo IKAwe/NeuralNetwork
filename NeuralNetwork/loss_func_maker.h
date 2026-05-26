@@ -24,7 +24,6 @@ public:
         return names;
     }
 
-    // 3. Tworzenie warstwy na podstawie nazwy lub typu
     static std::unique_ptr<Loss> create_by_name(std::string name) {
         FunctionsTypes type = registry.at(name);
         switch (type) {

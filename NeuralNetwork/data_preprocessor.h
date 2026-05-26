@@ -17,7 +17,6 @@ public:
 	virtual double transform(const std::string_view cell)=0;
 	virtual std::string inverse_transform(const double value) const = 0;
 
-	//Maybe add fit_and_transform functions that do both operations in one pass through the data, for efficiency.
 	virtual json serialize() const {
 		json j;
 		j["index"] = index;
@@ -90,45 +89,19 @@ class DataPreprocessor {
 	std::vector<std::unique_ptr<Column>> columns;
 	bool fitted = false;
 public:
-	/**
-	 * @brief Adds all columns - based on name and index. The function should be called before fit() and transform() functions. Thank to this user will be able to specify which columns should be included, which are the target columns, which are numerical and which are categorical.
-	 * @param data 
-	 */
+
 	void initialize_from_data(const StringMatrix& data);
-	/**
-	 * @brief Get a reference to the vector of columns. This allows the user to modify the columns - for example to set is_target_column flag or to exclude some columns from the transformation.
-	 * @return The reference to the vector of columns.
-	 */
 	const std::vector<std::unique_ptr<Column>>& get_columns() { return columns; };
 	std::vector<std::unique_ptr<Column>>& get_columns_mutable() { return columns; };
-	/**
-	 * @brief Collect information from the data to be able to transform it later. For numerical columns - calculating the mean and standard deviation, 
-	 for categorical columns - identifying the unique categories. This function should be called before transform() and should be called only once for a given dataset.
-	 * @param data The data to fit the preprocessor on. 
-	 */
+
 	void fit(const StringMatrix& data);
-	/**
-	 * @brief Transform the input data into two matrices - one for input features and one for output labels. The transformation is done based on the information collected in the fit() function. 
-	 For numerical columns, the data is normalized using the mean and standard deviation calculated in fit(). For categorical columns, the data is transformed into 
-	 int value - the index of the cathegory based on the number of categories identified in fit().
-	 * @param data The data to be transformed. Can be the same data that was used in fit() or new data with the same structure (same columns in the same order).
-	 */
 	Dataset transform(const StringMatrix& data, double test_fraction = 0.2);
 
 	//For prediction interpretation
 	std::vector<std::string> get_target_cols_names() const;
 	std::vector<std::string> inverse_transform_prediction(const Matrix& prediction_row) const;
-	/**
-	 * @brief Save the preprocessor state to a file. More precisely "columns" vector is saved - hence for numerical columns, mean and std_dev are saved, 
-	 and for categorical columns, the list of categories is saved. This allows the preprocessor to be reloaded later and used to transform 
-	 new data in the same way as the original data.
-	 * @param filename The name of the file to save the preprocessor state to.
-	 */
 	void save(const std::string& filename) const;
-	/**
-	 * @brief Load the preprocessor state from a file. This should be used to load a preprocessor that was previously saved using the save() function.
-	 * @param filename The name of the file to load the preprocessor state from. The file should contain the state of the preprocessor as saved by the save() function.
-	 */
+
 	void load(const std::string& filename);
 
 	bool is_fitted() { return fitted; };

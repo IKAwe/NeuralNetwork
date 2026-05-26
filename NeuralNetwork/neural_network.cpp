@@ -37,7 +37,11 @@ void NeuralNetwork::delete_last_layer() {
     }
     layers.pop_back();
 }
-
+/**
+ * @brief Get the output of the model for given input. The input should have the same number of columns as the input dimension of the first layer. The function will pass the input through each layer sequentially and return the final output. If the model has no layers, an exception will be thrown.
+ * @param inputs The input data as a Matrix. Each row represents a sample, and each column represents a feature. The number of columns should match the input dimension of the first layer in the model.
+ * @return The output of the model as a Matrix. Each row represents a sample, and each column represents an output feature. The number of columns will match the output dimension of the last layer in the model.
+ */
 Matrix NeuralNetwork::predict(const Matrix& inputs) {
     if (layers.empty()) {
         throw std::runtime_error("NeuralNetwork::predict - Model has no layers.");
@@ -49,7 +53,12 @@ Matrix NeuralNetwork::predict(const Matrix& inputs) {
     return current_data;
 }
 
-
+/**
+ * @brief Test the model on given input and targets. The function will first call predict to get the model's output for the input, and then calculate the loss using the specified loss function. The input and target dimensions should match the model's architecture. If no loss function is set, an exception will be thrown.
+ * @param inputs The input data as a Matrix. Each row represents a sample, and each column represents a feature. The number of columns should match the input dimension of the first layer in the model.
+ * @param targets The target data as a Matrix. Each row represents a sample, and each column represents a target feature. The number of columns should match the output dimension of the last layer in the model.
+ * @return The calculated loss as a double.
+ */
 double NeuralNetwork::test(const Matrix& inputs, const Matrix& targets) {
     if (!loss_function) {
         throw std::runtime_error("NeuralNetwork::test - No loss function was added!");
@@ -62,7 +71,12 @@ double NeuralNetwork::test(const Matrix& inputs, const Matrix& targets) {
     return error;
 }
 
-
+/**
+ * @brief Train the model using the provided dataset and hyperparameters. The function will perform forward and backward passes through the model for a specified number of epochs, updating the model's parameters using the calculated gradients. The training will be done in batches, and the loss will be calculated for each batch. After each epoch, the average loss will be printed, and if a test set is provided, the test loss will also be calculated and printed. The function also accepts a callback that will be called at the end of each epoch with the epoch statistics, allowing for custom actions such as early stopping or logging. If no loss function is set, an exception will be thrown.
+ * @param dataset The dataset to train the model on. It should contain input and output data, as well as optional test data.
+ * @param params The hyperparameters for training, such as learning rate, batch size, and number of epochs.
+ * @param on_epoch_end A callback function that will be called at the end of each epoch with the epoch statistics. The function should return true to continue training or false to stop early.
+ */
 void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std::function<bool(EpochStats)> on_epoch_end) {
     if (!loss_function) {
         throw std::runtime_error("NeuralNetwork::train - Loss function was not added");
@@ -235,7 +249,10 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
 	auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
 	std::cout << "Training completed in " << duration << " seconds." << std::endl;
 }
-
+/**
+ * @brief Save the model architecture and parameters to a binary file. The function will write the number of layers, followed by the name, input dimension, output dimension, and parameters of each layer in binary format. The file can later be loaded using the load function to restore the model. If the file cannot be opened for writing, an exception will be thrown.
+ * @param filename The name of the file to save the model to.
+ */
 void NeuralNetwork::save(const std::string& filename) {
     std::ofstream out(filename, std::ios::binary);
     if (!out) {
@@ -259,7 +276,10 @@ void NeuralNetwork::save(const std::string& filename) {
         layer->save(out);
     }
 }
-
+/**
+ * @brief Load the model architecture and parameters from a binary file. The function will read the number of layers, followed by the name, input dimension, output dimension, and parameters of each layer in binary format. The existing model will be cleared before loading the new one. If the file cannot be opened for reading, or if the file format is invalid, an exception will be thrown.
+ * @param filename The name of the file to load the model from.
+ */
 void NeuralNetwork::load(const std::string& filename) {
     std::ifstream in(filename, std::ios::binary);
     if (!in) {
