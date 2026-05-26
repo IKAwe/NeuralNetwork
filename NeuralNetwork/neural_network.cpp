@@ -147,6 +147,12 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
             );
         }
     }
+    if(params.batch_size <= 0){
+        throw std::runtime_error("NeuralNetwork::train - Batch size must be greater than 0");
+	}
+    if (params.epochs <= 0) {
+        throw std::runtime_error("NeuralNetwork::train - Number of epochs must be greater than 0");
+    }
     //Preallocation for batching
     Matrix batch_inputs(params.batch_size, inputs.get_columns_nb());
     Matrix batch_targets(params.batch_size, targets.get_columns_nb());
