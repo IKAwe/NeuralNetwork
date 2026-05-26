@@ -274,6 +274,7 @@ void show_architecture_settings(AppState& state) {
 
     ImGui::InputText("File Path##net", state.network_filepath, sizeof(state.network_filepath));
 
+    if (state.is_training) ImGui::BeginDisabled();
     // save button
     if (ImGui::Button("Save Model", ImVec2(120, 0))) {
         std::string filepath(state.network_filepath);
@@ -293,6 +294,7 @@ void show_architecture_settings(AppState& state) {
             }
             }).detach();
     }
+    if (state.is_training) ImGui::EndDisabled();
 
     ImGui::SameLine();
 

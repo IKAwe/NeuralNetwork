@@ -81,10 +81,10 @@ void show_prediction_form(AppState& state) {
             state.predict_results.clear();
             auto target_names = state.prediction_preprocessor.get_target_cols_names();
 
-            for (size_t out_idx = 0; out_idx < output.get_columns_nb(); ++out_idx) {
-                std::string t_name = (out_idx < target_names.size()) ? target_names[out_idx] : "Output " + std::to_string(out_idx);
-
-                state.predict_results.push_back(t_name + ": " + denormalized_results[out_idx]);
+            for (size_t i = 0; i < denormalized_results.size(); ++i) {
+                std::string t_name = (i < target_names.size()) ? target_names[i] : "Output " + std::to_string(i);
+                
+                state.predict_results.push_back(t_name + ": " + denormalized_results[i]);
             }
         }
         catch (const std::exception& e) {

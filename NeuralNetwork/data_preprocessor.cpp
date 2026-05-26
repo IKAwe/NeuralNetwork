@@ -195,6 +195,8 @@ Dataset DataPreprocessor::transform(const StringMatrix& data, double test_fracti
     size_t test_row_nb = static_cast<size_t>(num_rows * test_fraction);
     size_t train_row_nb = num_rows - test_row_nb;
 
+    size_t total_output_width = 0;
+
 	// Count how many input and output columns we have based on the is_target_column flag
     for (const auto& col : columns) {
 		if (!col->include_column) continue; // Skip not included
@@ -205,37 +207,66 @@ Dataset DataPreprocessor::transform(const StringMatrix& data, double test_fracti
         if (col->is_target_column) {
             output_cols.push_back(col.get());
             out_cat_counts.push_back(cat_count);
+
+            total_output_width += (cat_count > 0) ? cat_count : 1;
         }
         else {
             input_cols.push_back(col.get());
             in_cat_counts.push_back(cat_count);
         }
     }
+    size_t total_input_width = input_cols.size();
 
-	Dataset ds(train_row_nb, test_row_nb, input_cols.size(), output_cols.size());
+	Dataset ds(train_row_nb, test_row_nb, total_input_width, total_output_width);
 
     ds.metadata.input_category_counts = std::move(in_cat_counts);
     ds.metadata.output_category_counts = std::move(out_cat_counts);
 
+	//TRAINING DATA
     for (size_t r = 1; r <= train_row_nb; ++r) {
-
+        //Inputs
         for (size_t i = 0; i < input_cols.size(); ++i) {
             ds.input_data(r - 1, i) = input_cols[i]->transform(data(r, input_cols[i]->get_index()));
         }
+        //Outputs - for categorical columns one hot encode
+        size_t c_out = 0; //index used to track the current output column, since one categorical column can take multiple output columns due to one-hot encoding
         for (size_t o = 0; o < output_cols.size(); ++o) {
-            ds.output_data(r - 1, o) = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
+            double val = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
+
+            if (auto cat_col = dynamic_cast<CategoricalColumn*>(output_cols[o])) {
+                size_t width = cat_col->get_categories().size();
+                for (size_t w = 0; w < width; ++w) ds.output_data(r - 1, c_out + w) = 0.0;
+                if (val >= 0.0) ds.output_data(r - 1, c_out + static_cast<size_t>(val)) = 1.0;
+                c_out += width;
+            }
+            else {
+                ds.output_data(r - 1, c_out++) = val;
+            }
         }
     }
+	//TEST DATA
     for (size_t r = train_row_nb+1; r <= num_rows; ++r) {
+        //Inputs
         size_t test_idx = r - train_row_nb - 1;
         for (size_t i = 0; i < input_cols.size(); ++i) {
             ds.test_inputs(test_idx, i) = input_cols[i]->transform(data(r, input_cols[i]->get_index()));
         }
+		//Outputs - for categorical columns one hot encode
+        size_t c_out = 0;
         for (size_t o = 0; o < output_cols.size(); ++o) {
-            ds.test_outputs(test_idx, o) = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
+            double val = output_cols[o]->transform(data(r, output_cols[o]->get_index()));
+
+            if (auto cat_col = dynamic_cast<CategoricalColumn*>(output_cols[o])) {
+                size_t width = cat_col->get_categories().size();
+                for (size_t w = 0; w < width; ++w) ds.test_outputs(test_idx, c_out + w) = 0.0;
+                if (val >= 0.0) ds.test_outputs(test_idx, c_out + static_cast<size_t>(val)) = 1.0;
+                c_out += width;
+            }
+            else {
+                ds.test_outputs(test_idx, c_out++) = val;
+            }
         }
     }
-
     return ds;
 }
 
@@ -256,20 +287,45 @@ std::vector<std::string> DataPreprocessor::inverse_transform_prediction(const Ma
         throw std::logic_error("DataPreprocessor::inverse_transform_prediction called before fit() or load()");
     }
     std::vector<std::string> results;
-    results.reserve(prediction_row.get_columns_nb());
+    size_t c_out = 0;
 
-    int pred_col_idx = 0;
+    for (const auto& col : columns) {
+        if (!col->include_column || !col->is_target_column) continue;
 
-    for (size_t i = 0; i < columns.size(); ++i) {
-        auto& col = columns[i];
+        // If cateorical column: One-Hot Encoding -> ArgMax
+        if (auto cat_col = dynamic_cast<CategoricalColumn*>(col.get())) {
+            size_t width = cat_col->get_categories().size();
 
-        if (col->include_column && col->is_target_column) {
-            if (pred_col_idx < prediction_row.get_columns_nb()) {//maybe delete the condition
-                results.push_back(col->inverse_transform(prediction_row(0, pred_col_idx)));
-                pred_col_idx++;
+            if (c_out + width > prediction_row.get_columns_nb()) {
+                throw std::runtime_error("CRITICAL ERROR: Neural network output size is too small!");
             }
+
+            size_t best_idx = 0;
+            double max_prob = -1e9;
+
+            for (size_t w = 0; w < width; ++w) {
+                double prob = prediction_row(0, c_out + w);
+                if (prob > max_prob) {
+                    max_prob = prob;
+                    best_idx = w;
+                }
+            }
+
+            results.push_back(col->inverse_transform(static_cast<double>(best_idx)));
+            c_out += width;
+        }
+		//If numerical column: just inverse transform the single value
+        else {
+            if (c_out + 1 > prediction_row.get_columns_nb()) {
+                throw std::runtime_error("CRITICAL ERROR: Neural network output size is too small!");
+            }
+            double val = prediction_row(0, c_out);
+            results.push_back(col->inverse_transform(val));
+
+            c_out += 1; 
         }
     }
+
     return results;
 }
 
