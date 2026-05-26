@@ -2,6 +2,7 @@
 #include "layer_maker.h"
 #include "app_gui.h"
 #include "imgui.h"
+#include <chrono>
 #include <functional>
 
 void show_architecture_settings(AppState& state) {
@@ -217,7 +218,12 @@ void show_architecture_settings(AppState& state) {
                     return true;
                  };
                 try{
+                    auto start_time = std::chrono::high_resolution_clock::now();
                     state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
+                    auto end_time = std::chrono::high_resolution_clock::now();
+                    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
+                    std::lock_guard<std::mutex> lock(state.gui_mutex);
+                    state.training_logs.push_back("Training completed in " + std::to_string(duration) + " seconds.");
                 }
                 catch (const std::exception& e) {
                     std::lock_guard<std::mutex> lock(state.gui_mutex);

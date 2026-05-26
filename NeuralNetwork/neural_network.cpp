@@ -2,6 +2,7 @@
 #include "loss_functions.h"
 #include "layer_maker.h"
 #include <iostream>
+#include <chrono>
 /**
  * @brief Add previosly initialized layer to the model.
  * @param layer Unique pointer to the layer to be added. The function takes ownership of the layer and will manage its lifetime. The layer should be initialized before being added to the model.
@@ -98,6 +99,11 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
     Matrix batch_inputs(params.batch_size, inputs.get_columns_nb());
     Matrix batch_targets(params.batch_size, targets.get_columns_nb());
 
+	size_t print_nb = 20; // Print only 20 times during training, to avoid spamming the console
+    size_t print_interval = (params.epochs >= print_nb) ? (params.epochs / print_nb) : 1;
+    
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     for (size_t epoch = 0; epoch < params.epochs; ++epoch) {
 
 		double accumulated_loss = 0.0;
@@ -141,10 +147,9 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
 
         //========== TEST against test set ==============
 
-
-        size_t print_interval = (params.epochs >= 10) ? (params.epochs / 20) : 1;
+        
         if (epoch % print_interval == 0 || epoch == params.epochs - 1) {
-            //Calculate test only 10 times - for now
+            //Calculate test only 20 times - for now
             double epoch_test_loss = 0.0;
             if (test_inputs.get_rows_nb() > 0) {
                 Matrix current_test_data = test_inputs;
@@ -168,6 +173,9 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
         }
 
     }
+	auto end_time = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
+	std::cout << "Training completed in " << duration << " seconds." << std::endl;
 }
 
 void NeuralNetwork::save(const std::string& filename) {
