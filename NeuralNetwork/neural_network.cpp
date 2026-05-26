@@ -76,29 +76,86 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
     const Matrix& test_inputs = dataset.test_inputs;
     const Matrix& test_targets = dataset.test_outputs;
     
+    //Safety checks
+    size_t train_input_rows = inputs.get_rows_nb();
+    size_t test_input_rows = test_inputs.get_rows_nb();
+
+    size_t train_output_rows = targets.get_rows_nb();
+    size_t test_output_rows = test_targets.get_rows_nb();
+
+
+    size_t train_input_cols = inputs.get_columns_nb();
+    size_t test_input_cols = test_inputs.get_columns_nb();
+
+    size_t train_output_cols = targets.get_columns_nb();
+    size_t test_output_cols = test_targets.get_columns_nb();
+
+
     if (total_samples == 0) {
         throw std::runtime_error("NeuralNetwork::train - Dataset is empty");
     }
-    if (targets.get_columns_nb() == 0) {
+    if (train_output_cols == 0) {
         throw std::runtime_error("NeuralNetwork:train - No target column");
     }
-    if (inputs.get_columns_nb() != layers.front()->get_input_nb()) {
+    if (train_input_cols != layers.front()->get_input_nb()) {
         throw std::runtime_error(
             "NeuralNetwork::train - Input dimension mismatch. "
             "Dataset input columns: " + std::to_string(inputs.get_columns_nb()) +
             ", Expected: " + std::to_string(layers.front()->get_input_nb())
         );
 	}
-    if (targets.get_columns_nb() != layers.back()->get_output_nb()) {
+    if (train_output_cols != layers.back()->get_output_nb()) {
         throw std::runtime_error(
             "NeuralNetwork::train - Target dimension mismatch. "
-            "Dataset target columns: " + std::to_string(targets.get_columns_nb()) +
+            "Dataset target columns: " + std::to_string(train_output_cols) +
             ", Expected: " + std::to_string(layers.back()->get_output_nb())
         );
 	}
+    if (train_input_rows != train_output_rows) {
+        throw std::runtime_error(
+            "NeuralNetwork::train - Number of input samples does not match number of target samples. "
+            "Input rows: " + std::to_string(train_input_rows) +
+            ", Target rows: " + std::to_string(train_output_rows)
+        );
+    }
+    // --- TEST SET VALIDATION (if present) ---
+    bool test_present = (test_input_rows > 0 || test_output_rows > 0);
+    if (test_present) {
+        if (test_input_rows != test_output_rows) {
+            throw std::runtime_error(
+                "NeuralNetwork::train - Test set row count mismatch. "
+                "test_inputs rows: " + std::to_string(test_input_rows) +
+                ", test_targets rows: " + std::to_string(test_output_rows)
+            );
+        }
+
+        if (test_input_rows > 0 &&
+            test_input_cols != layers.front()->get_input_nb()) {
+
+            throw std::runtime_error(
+                "NeuralNetwork::train - Test input dimension mismatch. "
+                "test_inputs columns: " + std::to_string(test_input_cols) +
+                ", Expected: " + std::to_string(layers.front()->get_input_nb())
+            );
+        }
+        if (test_output_rows > 0 &&
+            test_output_cols != layers.back()->get_output_nb()) {
+
+            throw std::runtime_error(
+                "NeuralNetwork::train - Test target dimension mismatch. "
+                "test_targets columns: " + std::to_string(test_output_cols) +
+                ", Expected: " + std::to_string(layers.back()->get_output_nb())
+            );
+        }
+    }
     //Preallocation for batching
     Matrix batch_inputs(params.batch_size, inputs.get_columns_nb());
     Matrix batch_targets(params.batch_size, targets.get_columns_nb());
+
+	size_t print_nb = 20; // Print only 20 times during training, to avoid spamming the console
+    size_t print_interval = (params.epochs >= print_nb) ? (params.epochs / print_nb) : 1;
+    
+    auto start_time = std::chrono::high_resolution_clock::now();
 
     for (size_t epoch = 0; epoch < params.epochs; ++epoch) {
 
@@ -143,12 +200,11 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
 
         //========== TEST against test set ==============
 
-
-        size_t print_interval = (params.epochs >= 10) ? (params.epochs / 20) : 1;
+        
         if (epoch % print_interval == 0 || epoch == params.epochs - 1) {
-            //Calculate test only 10 times - for now
+            //Calculate test only 20 times - for now
             double epoch_test_loss = 0.0;
-            if (test_inputs.get_rows_nb() > 0) {
+            if (test_present) {
                 Matrix current_test_data = test_inputs;
                 for (const auto& layer : layers) {
                     current_test_data = layer->feedforward(current_test_data);
@@ -233,5 +289,18 @@ void NeuralNetwork::load(const std::string& filename) {
         layer->load(in);
         add_layer(std::move(layer));
     }
+}
 
+size_t NeuralNetwork::get_total_parameters() const {
+    size_t total = 0;
+    for (const auto& layer : layers) {
+        total += layer->get_parameters_count();
+    }
+    return total;
+}
+
+double NeuralNetwork::get_total_memory_mb() const {
+    size_t params = get_total_parameters();
+    // params * 8 bajtów ( double) / 1024 (do KB) / 1024 (do MB)
+    return static_cast<double>(params * sizeof(double)) / (1024.0 * 1024.0);
 }

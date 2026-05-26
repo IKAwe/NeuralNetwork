@@ -34,6 +34,9 @@ public:
     virtual void save(std::ostream& out) const {};
     virtual void load(std::istream& in) {};
 
+    //For measuring model size
+    virtual size_t get_parameters_count() const {return 0;}
+
     size_t get_id() const { return layer_id; }
 
 	size_t get_input_nb() const { return input_nb; }
@@ -60,7 +63,7 @@ public:
     void load(std::istream& in) override;
 
     void zero_gradients() override {accumulated_gradients.zero(); accumulated_bias_gradients.zero(); } ;
-
+	size_t get_parameters_count() const override { return (input_nb * output_nb) + output_nb; }
 #ifdef _DEBUG
     // For testing purposes
     Matrix& get_weights() { return weights; }

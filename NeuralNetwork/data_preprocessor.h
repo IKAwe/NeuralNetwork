@@ -57,6 +57,7 @@ public:
 };
 class CategoricalColumn : public Column {
 	std::vector<std::string> categories;
+	bool scale = true; //If true transform output will be between -1 and 1, else the output will be equal to category index
 public:
 	void fit(const StringMatrix& data) override;
 	double transform(const std::string_view cell) override;
