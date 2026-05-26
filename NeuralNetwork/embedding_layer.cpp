@@ -193,3 +193,11 @@ void TabularEmbeddingLayer::load(std::istream& in) {
         throw std::runtime_error("TabularEmbeddingLayer::load - Calculated output dimension mismatch.");
     }
 }
+
+size_t TabularEmbeddingLayer::get_parameters_count() const {
+    size_t total = 0;
+    for (const auto& table : embedding_tables) {
+        total += table.get_rows_nb() * table.get_columns_nb();
+    }
+    return total;
+}

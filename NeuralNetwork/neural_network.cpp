@@ -67,7 +67,6 @@ void NeuralNetwork::train(const Dataset& dataset, const Hyperparams params, std:
     if (!loss_function) {
         throw std::runtime_error("NeuralNetwork::train - Loss function was not added");
     }
-	auto start_time = std::chrono::steady_clock::now();
 
     const Matrix& inputs = dataset.input_data;
     const Matrix& targets = dataset.output_data;

@@ -30,6 +30,8 @@ public:
 
     std::string get_layer_name() const override { return "TabularEmbedding"; }
 
+    size_t get_parameters_count() const override;
+
     void save(std::ostream& out) const override; 
     void load(std::istream& in) override; 
 };
