@@ -113,7 +113,7 @@ public:
 	 int value - the index of the cathegory based on the number of categories identified in fit().
 	 * @param data The data to be transformed. Can be the same data that was used in fit() or new data with the same structure (same columns in the same order).
 	 */
-	Dataset transform(const StringMatrix& data, double test_fraction = 0.2);
+	Dataset transform(const StringMatrix& data, double test_fraction = 0.6);
 
 	//For prediction interpretation
 	std::vector<std::string> get_target_cols_names() const;
