@@ -103,13 +103,14 @@ void show_architecture_settings(AppState& state) {
             // 4. PARAMETRY
             ImGui::TableSetColumnIndex(3);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            // Indeks 3 w naszym systemie to "Dropout"
-            if (state.gui_layers[i].type_index == static_cast<int>(LayerType::Dropout)) {//To change type index need to be stored as enum class in LayerUI
-                ImGui::SliderFloat("Rate", &state.gui_layers[i].dropout_rate, 0.0f, 1.0f, "%.2f");
-            }
-            else {
-                ImGui::TextDisabled("brak");
-            }
+            //// Indeks 3 w naszym systemie to "Dropout"
+            //if (state.gui_layers[i].type_index == static_cast<int>(LayerType::Dropout)) {//To change type index need to be stored as enum class in LayerUI
+            //    ImGui::SliderFloat("Rate", &state.gui_layers[i].dropout_rate, 0.0f, 1.0f, "%.2f");
+            //}
+            //else {
+            //    ImGui::TextDisabled("no");
+            //}
+            ImGui::TextDisabled("None");
 
             ImGui::PopID();
         }
