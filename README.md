@@ -1,13 +1,13 @@
-# C++ Neural Engine & GUI
+# C++ Neural Engine with GUI
 
-A Multilayer Perceptron neural network written from scratch in C++. I built this engine to train models without relying on heavy, black-box frameworks like PyTorch or TensorFlow, while keeping a live, interactive view of the data and training process.
+A neural network engine written from scratch in C++. I built this engine to train models without relying on heavy, black-box frameworks like PyTorch or TensorFlow, while keeping a live, interactive view of the data and training process.
 
-The focus here is on low-level memory optimization and a completely unblocked UI.
+The focus here is on low-level memory optimization and a unblocked UI.
 ## Branches
 This repository is split into specific branches based on the features you need:
 * **`master`**: The lightweight, core version of the engine. Supports standard Dense layers, Dropout, Regression (MSE), and basic Label Encoding.
-* **`accelerated`**: A fully GPU-accelerated version of the matrix math engine using cuBLAS.
-* **`embeddings-onehot_output`**: The advanced version. Introduces **Tabular Embedding Layers** for high-cardinality categorical inputs, One-Hot Encoding (OHE) for targets. Best for datasets with many categorical columns. Uses accelerations from 'accelerated' branch.
+* **`accelerated`**: A fully GPU-accelerated version of the matrix math engine using cuBLAS. Best for large datasets with large batch sizes.
+* **`embeddings-onehot_output`**: The advanced version. Introduces **Tabular Embedding Layers** for high-cardinality categorical inputs, One-Hot Encoding for targets. Best for datasets with many categorical columns. Uses accelerations from 'accelerated' branch.
 
 ## Key Features
 
@@ -50,4 +50,3 @@ To run the CUDA version:
 Remember the accelerated version will work best for large datasets with large batch sizes(128+) and neurons per layer - otherwise it probably will be slower than not cuda-accelerated version.
 
 ---
-*Built as a deep dive into the math behind neural networks and C++ optimization.*
