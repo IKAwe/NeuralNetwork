@@ -289,3 +289,17 @@ void NeuralNetwork::load(const std::string& filename) {
         add_layer(std::move(layer));
     }
 }
+
+size_t NeuralNetwork::get_total_parameters() const {
+    size_t total = 0;
+    for (const auto& layer : layers) {
+        total += layer->get_parameters_count();
+    }
+    return total;
+}
+
+double NeuralNetwork::get_total_memory_mb() const {
+    size_t params = get_total_parameters();
+    // params * 8 bajtów ( double) / 1024 (do KB) / 1024 (do MB)
+    return static_cast<double>(params * sizeof(double)) / (1024.0 * 1024.0);
+}

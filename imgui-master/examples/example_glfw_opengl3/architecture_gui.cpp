@@ -217,6 +217,13 @@ void show_architecture_settings(AppState& state) {
                     }
                     return true;
                  };
+                // Log model size before training
+                {
+                    std::lock_guard<std::mutex> lock(state.gui_mutex);
+                    state.training_logs.push_back("Model parameters: " + std::to_string(state.nn.get_total_parameters()));
+                    state.training_logs.push_back("Model memory usage: " + std::to_string(state.nn.get_total_memory_mb()) + " MB");
+                }
+                
                 try{
                     auto start_time = std::chrono::high_resolution_clock::now();
                     state.nn.train(state.dataset.value(), state.hyperparams, on_epoch_end);
